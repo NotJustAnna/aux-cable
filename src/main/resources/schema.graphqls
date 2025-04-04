@@ -1,0 +1,117 @@
+# Schema definition for the GraphQL API of the application
+
+# ======== Schema types ========
+
+# Queries (read-only)
+type Query {
+    #
+    # Get the current state of the application
+    #
+    state: State
+
+    #
+    # Get the list of accounts previously logged in, if any
+    #
+    accounts: [Account]
+}
+
+# Mutations (meaningful changes to the application)
+type Mutation {
+    #
+    # Log in with the given token
+    #
+    login(token: String!, remember: Boolean): State
+
+    #
+    # Log out the current account
+    #
+    logout: State
+
+    #
+    # Connect to a given voice channel
+    #
+    connect(channelId: String!): State
+
+    #
+    # Disconnect from the current voice channel
+    #
+    disconnect: State
+
+    #
+    # Starts or stops streaming the current voice channel
+    #
+    stream(enabled: Boolean!): State
+}
+
+# Subscriptions (real-time updates)
+type Subscription {
+    #
+    # This allows clients to listen to state changes.
+    # It will send the current state when the subscription is first created,
+    # and then send updates whenever the state changes.
+    #
+    currentState: State
+
+    #
+    # This allows clients to listen to new messages.
+    # It will send the new message whenever a new message is created.
+    #
+    newMessage: Message
+
+    #
+    # Updates every time either the guilds or the channels change.
+    # It errors/finishes if the user is logged out.
+    #
+    guilds: [Guild]
+}
+
+# ======== Application types ========
+
+type State {
+    type: StateType!
+    account: Account
+    guilds: [Guild]
+    streaming: Boolean
+}
+
+type AudioInput {
+    name: String!
+    device: String!
+}
+
+enum StateType {
+    IDLE
+    LOGGED_IN
+    CONNECTED
+}
+
+type Account {
+    token: String!
+    name: String
+    imageUrl: String
+}
+
+type Guild {
+    id: String!
+    name: String
+    iconUrl: String
+    channels: [Channel]
+}
+
+type Channel {
+    id: String!
+    name: String
+    guild: Guild
+}
+
+type Message {
+    type: MessageType!
+    content: String
+}
+
+enum MessageType {
+    INFO
+    SUCCESS
+    WARNING
+    ERROR
+}

@@ -44,12 +44,14 @@ class AuxSendHandler(
                     log.warn("JDA is not keeping up with the audio stream.")
                     log.warn("Output will be truncated.")
                     var bytes = 0
-                    val trash = ByteArray(1048)
+                    val trash = ByteArray(192)
+                    // 192 bytes = 1ms of the target audio format
+                    // so we're discarding audio 1ms at a time.
                     var lastWarn = currentTimeMillis()
                     while (readIndex == availableIndex) {
                         val read = stream.read(trash)
                         if (read <= 0) {
-                            Thread.sleep(10)
+                            Thread.sleep(1)
                         }
                         bytes += read
 
@@ -66,6 +68,24 @@ class AuxSendHandler(
         }
 
     }
+
+    override fun canProvide(): Boolean {
+        // add a buffer of 5 frames
+        return (readIndex + 5) % frames.size != availableIndex
+    }
+
+    override fun provide20MsAudio(): ByteBuffer {
+        val buffer = frames[availableIndex]
+        availableIndex = (availableIndex + 1) % frames.size
+        return buffer
+    }
+
+    override fun close() {
+        thread.interrupt()
+        stream.close()
+        target.close()
+    }
+
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(AuxSendHandler::class.java)
@@ -137,22 +157,5 @@ class AuxSendHandler(
             log.error("Failed to create AuxSendHandler for $input")
             return null
         }
-    }
-
-    override fun canProvide(): Boolean {
-        // add a buffer of 5 frames
-        return (readIndex + 5) % frames.size != availableIndex
-    }
-
-    override fun provide20MsAudio(): ByteBuffer {
-        val buffer = frames[availableIndex]
-        availableIndex = (availableIndex + 1) % frames.size
-        return buffer
-    }
-
-    override fun close() {
-        thread.interrupt()
-        stream.close()
-        target.close()
     }
 }

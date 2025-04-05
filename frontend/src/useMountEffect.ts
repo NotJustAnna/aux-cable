@@ -1,0 +1,5 @@
+import {EffectCallback, useEffect} from "react";
+
+export function useMountEffect(effect: EffectCallback) {
+    useEffect(effect, []);
+}

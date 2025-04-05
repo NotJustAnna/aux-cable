@@ -1,39 +1,25 @@
-import {StrictMode} from 'react'
 import {createRoot} from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import {ApolloClient, ApolloProvider, HttpLink, InMemoryCache, split} from '@apollo/client';
-import {GraphQLWsLink} from '@apollo/client/link/subscriptions';
-import {createClient} from 'graphql-ws';
-import {getMainDefinition} from "@apollo/client/utilities";
+import {WebSocketContext} from "./contexts/WebSocketContext.tsx";
+import {WebSocketService} from "./services/WebSocketService.tsx";
+import axios from "axios";
+import {HttpContext} from "./contexts/HttpContext.ts";
 
 // const wsProto: Record<string, string> = { 'http:': 'ws:', 'https:': 'wss:' };
 
-const client = new ApolloClient({
-    link: split(
-        ({query}) => {
-            const definition = getMainDefinition(query);
-            return (
-                definition.kind === 'OperationDefinition' &&
-                definition.operation === 'subscription'
-            );
-        },
-        new GraphQLWsLink(createClient({
-            // url: `${wsProto[window.location.protocol]}//${window.location.host}/graphql`,
-            url: 'ws://localhost:3000/graphql',
-        })),
-        new HttpLink({
-            // uri: `${(window.location.origin)}/graphql`
-            uri: 'http://localhost:3000/graphql'
-        }),
-    ),
-    cache: new InMemoryCache(),
+//`${wsProto[window.location.protocol]}//${window.location.host}/api/gateway`,
+const ws = new WebSocketService('ws://localhost:3000/api/gateway');
+const http = axios.create({
+    // `${(window.location.origin)}/api`
+    baseURL: 'http://localhost:3000/api',
+    validateStatus: status => status >= 200 && status <= 500,
 });
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-      <ApolloProvider client={client}>
-          <App />
-      </ApolloProvider>
-  </StrictMode>,
+      <WebSocketContext.Provider value={ws}>
+          <HttpContext.Provider value={http}>
+              <App />
+          </HttpContext.Provider>
+      </WebSocketContext.Provider>
 )

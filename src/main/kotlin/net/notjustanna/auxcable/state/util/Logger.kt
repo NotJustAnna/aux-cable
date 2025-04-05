@@ -1,4 +1,4 @@
-package net.notjustanna.auxcable.state
+package net.notjustanna.auxcable.state.util
 
 import io.reactivex.rxjava3.subjects.PublishSubject
 

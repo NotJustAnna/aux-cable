@@ -40,6 +40,8 @@ bin/
 .auxcable_token
 *.auxcable_token
 
+remember_me.json
+
 # Logs
 logs
 *.log

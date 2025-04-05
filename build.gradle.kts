@@ -16,15 +16,25 @@ repositories {
 
 dependencies {
     implementation("com.linecorp.armeria:armeria:1.32.3")
-    implementation("com.linecorp.armeria:armeria-graphql:1.32.3")
+    implementation("com.linecorp.armeria:armeria-rxjava3:1.32.3")
+//    implementation("com.linecorp.armeria:armeria-kotlin:1.32.3")
     implementation("com.linecorp.armeria:armeria-logback:1.32.3")
     implementation("com.github.webview:webview_java:1.3.0")
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-win-x86:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-x86:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-musl-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-arm:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-aarch64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-musl-aarch64:0.2.9")
+    implementation("club.minnced:udpqueue-native-darwin:0.2.9")
     implementation("io.reactivex.rxjava3:rxjava:3.1.10")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.+")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.5.17")
-//    runtimeOnly(project(":frontend"))
+//    runtimeOnly(project(":frontend")) // FIXME uncomment on prod
 }
 
 application {
@@ -34,10 +44,30 @@ application {
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions { javaParameters = true }
 }
 
 tasks.named<ShadowJar>("shadowJar") {
     archiveClassifier.set("app")
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude(
+        "META-INF/maven/**",
+        "META-INF/license/**",
+        "META-INF/micrometer-*.properties",
+        "META-INF/LGPL2.1",
+        "META-INF/AL2.0",
+        "META-INF/*-LICENSE",
+        "META-INF/LICENSE",
+        "META-INF/LICENSE.txt",
+        "META-INF/*-NOTICE",
+        "META-INF/NOTICE",
+        "META-INF/NOTICE.txt",
+        "META-INF/COPYRIGHT",
+        "META-INF/com.android.tools/**",
+        "META-INF/proguard/**",
+        "META-INF/native-image/**"
+    )
 //    minimize {
 //        exclude(dependency("ch.qos.logback:logback-classic:.*"))
 //    }

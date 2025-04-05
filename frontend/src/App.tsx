@@ -1,56 +1,59 @@
-import {FC, useState} from 'react'
-import {useSubscription, gql} from '@apollo/client';
+import {FC, ReactNode, useState} from 'react'
 import {IdlePage} from "./components/IdlePage.tsx";
 import {LoggedInPage} from "./components/LoggedInPage.tsx";
 import {ConnectedPage} from "./components/ConnectedPage.tsx";
 import {createPortal} from "react-dom";
-
-const CURRENT_STATE_TYPE = gql`
-    subscription CurrentStateType {
-        currentState {
-            type
-        }
-    }`;
-
-const NEW_MESSAGE = gql`
-    subscription NewMessage {
-        newMessage {
-            type
-            content
-        }
-    }`;
-
+import {useWebSocket} from "./contexts/WebSocketContext.tsx";
+import {MessageModel, StateModel} from "./model.ts";
+import {useMountEffect} from "./useMountEffect.ts";
+import {MessageContext} from "./contexts/MessageContext.tsx";
+import {ErrorMessage, InfoMessage, MessageCorner, SuccessMessage, WarningMessage} from "./components/common.tsx";
 
 interface ComponentProps {
-    state?: any
+    state: StateModel
 }
 
-const components: Record<string, FC<ComponentProps>> = {
+const components: Record<StateModel['type'], FC<ComponentProps>> = {
     'IDLE': IdlePage,
     'LOGGED_IN': LoggedInPage,
     'CONNECTED': ConnectedPage,
 }
 
-function App() {
-    const {loading, error, data} = useSubscription(CURRENT_STATE_TYPE);
-    const [messages, setMessages] = useState([] as any[]);
-    useSubscription(NEW_MESSAGE, {
-        onData({data}) {
-            console.log(data);
-            setMessages([...messages, data.data.newMessage]);
-            setTimeout(() => setMessages((prev) => prev.slice(1)), 5000);
-        }
-    });
+interface MessageProps {
+    children: ReactNode
+}
+const MessageComponent: Record<MessageModel['type'], FC<MessageProps>> = {
+    ERROR: ErrorMessage,
+    INFO: InfoMessage,
+    WARNING: WarningMessage,
+    SUCCESS: SuccessMessage,
+}
 
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>Error : {error.message}</p>;
-    const Component = components[data.currentState.type];
+function App() {
+    const ws = useWebSocket();
+
+    const [currentState, setCurrentState] = useState<StateModel | null>(null);
+    const [messages, setMessages] = useState([] as MessageModel[]);
+    const postMessage = (message: MessageModel) => {
+        setMessages([...messages, message]);
+        setTimeout(() => setMessages((prev) => prev.slice(1)), 5000);
+    };
+    useMountEffect(() => ws.subscribe("currentState", (data: StateModel) => setCurrentState(data)));
+    useMountEffect(() => ws.subscribe("messages", (data: MessageModel) => postMessage(data)));
+
+    if (currentState === null) return <p>Loading...</p>;
+    const Component = components[currentState.type];
     return <>
-        <Component state={data.currentState}/>
+        <MessageContext.Provider value={postMessage}>
+            <Component state={currentState}/>
+        </MessageContext.Provider>
         {messages.length > 0 && createPortal(
-            <div className="absolute bottom-0 left-0 p-4 gap-8">
-                {messages.map((message, i) => <div key={i} className="bg-slate-700 p-2 rounded">{message.content}</div>)}
-            </div>,
+            <MessageCorner>
+                {messages.map((message, i) => {
+                    const Message = MessageComponent[message.type];
+                    return <Message key={i}>{message.content}</Message>
+                })}
+            </MessageCorner>,
             document.body,
         )}
     </>;

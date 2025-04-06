@@ -9,6 +9,7 @@ import dev.webview.Webview
 import net.notjustanna.auxcable.api.AccountService
 import net.notjustanna.auxcable.api.ActionService
 import net.notjustanna.auxcable.api.GatewayService
+import net.notjustanna.auxcable.api.InviteService
 import net.notjustanna.auxcable.state.State
 import kotlin.random.Random
 import kotlin.random.nextInt
@@ -24,6 +25,7 @@ fun main(args: Array<String>) {
 
         annotatedService("/api/accounts", AccountService())
         annotatedService("/api/actions", ActionService(state))
+        annotatedService("/api/invite", InviteService(state))
         service(
             "/api/gateway", WebSocketService.builder(GatewayService(state))
                 .allowedOrigins("*")
@@ -52,5 +54,7 @@ fun main(args: Array<String>) {
 
         webview.run()
         webview.close()
+        state().jda?.shutdown()
+        server.stop().join()
     }
 }

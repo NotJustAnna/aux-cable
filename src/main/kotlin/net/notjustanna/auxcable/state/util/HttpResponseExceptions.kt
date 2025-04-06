@@ -15,6 +15,9 @@ object HttpResponseExceptions {
     val noSuchChannel: RuntimeException
         get() = HttpResponseException.of(response(HttpStatus.BAD_REQUEST, "NO_SUCH_CHANNEL"))
 
+    val noSuchAudioInput: RuntimeException
+        get() = HttpResponseException.of(response(HttpStatus.BAD_REQUEST, "NO_SUCH_AUDIO_INPUT"))
+
     val invalidToken: RuntimeException
         get() = HttpResponseException.of(response(HttpStatus.UNAUTHORIZED, "INVALID_TOKEN"))
 

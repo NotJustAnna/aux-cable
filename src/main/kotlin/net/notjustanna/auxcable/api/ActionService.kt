@@ -2,7 +2,6 @@ package net.notjustanna.auxcable.api
 
 import com.linecorp.armeria.server.annotation.ConsumesJson
 import com.linecorp.armeria.server.annotation.Post
-import com.linecorp.armeria.server.annotation.ProducesJson
 import net.notjustanna.auxcable.api.action.ConnectAction
 import net.notjustanna.auxcable.api.action.LoginAction
 import net.notjustanna.auxcable.api.action.StreamAction
@@ -34,6 +33,6 @@ class ActionService(private val state: () -> State) {
     @ConsumesJson
     @Post("/stream")
     fun stream(action: StreamAction) {
-        state().stream(action.enabled)
+        state().stream(action.input)
     }
 }

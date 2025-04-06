@@ -35,7 +35,7 @@ function App() {
     const [currentState, setCurrentState] = useState<StateModel | null>(null);
     const [messages, setMessages] = useState([] as MessageModel[]);
     const postMessage = (message: MessageModel) => {
-        setMessages([...messages, message]);
+        setMessages((prev) => [...prev, message]);
         setTimeout(() => setMessages((prev) => prev.slice(1)), 5000);
     };
     useMountEffect(() => ws.subscribe("currentState", (data: StateModel) => setCurrentState(data)));

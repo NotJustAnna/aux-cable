@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm") version "2.0.0"
     application
     id("com.gradleup.shadow") version "8.3.3"
+    id("edu.sc.seis.launch4j") version "3.0.6"
 }
 
 group = "net.notjustanna"
@@ -17,7 +18,6 @@ repositories {
 dependencies {
     implementation("com.linecorp.armeria:armeria:1.32.3")
     implementation("com.linecorp.armeria:armeria-rxjava3:1.32.3")
-//    implementation("com.linecorp.armeria:armeria-kotlin:1.32.3")
     implementation("com.linecorp.armeria:armeria-logback:1.32.3")
     implementation("com.github.webview:webview_java:1.3.0")
     implementation("net.dv8tion:JDA:5.1.1")
@@ -34,7 +34,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.+")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.5.17")
-//    runtimeOnly(project(":frontend")) // FIXME uncomment on prod
+    runtimeOnly(project(":frontend"))
 }
 
 application {
@@ -78,4 +78,17 @@ distributions.named("shadow") {
 
     @Suppress("UnstableApiUsage")
     distributionClassifier.set("app")
+}
+
+launch4j {
+    mainClassName = project.application.mainClass
+    copyConfigurable = listOf<Any>()
+    setJarTask(project.tasks.shadowJar.get())
+    priority = "high"
+    jvmOptions.addAll(project.application.applicationDefaultJvmArgs)
+}
+
+tasks {
+    build.get().dependsOn(createAllExecutables)
+    createAllExecutables.get().dependsOn(shadowJar)
 }

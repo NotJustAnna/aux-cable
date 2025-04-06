@@ -37,7 +37,7 @@ class LoggedInState(
 
     override fun connect(channelId: String): State {
         val channel = jda.getVoiceChannelById(channelId) ?: throw HttpResponseExceptions.noSuchChannel
-        logger.info("Connecting to \"${channel.guild.name} > ${channel.name}\"...")
+        logger.info("Connecting to \"${channel.name}\"...")
 
         val event = Single.create { emitter ->
             jda.listenOnce(GuildVoiceUpdateEvent::class.java)
@@ -48,9 +48,9 @@ class LoggedInState(
         channel.guild.audioManager.openAudioConnection(channel)
         try {
             event.timeout(10, TimeUnit.SECONDS).blockingGet()
-            logger.info("Connected to \"${channel.guild.name} > ${channel.name}\"")
+            logger.info("Connected!")
         } catch (e: Exception) {
-            logger.error("Took too long to connect to \"${channel.guild.name} > ${channel.name}\"")
+            logger.error("Took too long to connect to the channel.")
         }
         return ConnectedState(logger, stateSubject, jda, channelId)
     }

@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.SelfUser
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.notjustanna.audio.discord.AuxSendHandler
 import net.notjustanna.audio.system.AudioInput
 import net.notjustanna.auxcable.state.State
 import net.notjustanna.auxcable.state.util.Account
@@ -65,6 +66,20 @@ object Model {
         return AudioInputModel(
             name = it.name,
             device = it.device,
+        )
+    }
+
+    fun convertCurrent(channel: VoiceChannel): CurrentVoiceChannelModel {
+        return CurrentVoiceChannelModel(
+            id = channel.id,
+            guildId = channel.guild.id,
+            guildName = channel.guild.name,
+            guildIconUrl = channel.guild.iconUrl,
+            name = channel.name,
+            members = channel.members
+                .filter { it.id != it.guild.selfMember.id }
+                .map(::convert).sortedBy { it.id },
+            currentInput = (channel.guild.audioManager.sendingHandler as? AuxSendHandler)?.input?.let(::convert),
         )
     }
 }

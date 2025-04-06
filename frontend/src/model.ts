@@ -43,3 +43,13 @@ export interface AudioInputModel {
     name: string
     device: string
 }
+
+export interface CurrentVoiceChannelModel {
+    id: string
+    guildId: string
+    guildName: string
+    guildIconUrl?: string
+    name: string
+    members: MemberModel[]
+    currentInput?: AudioInputModel
+}

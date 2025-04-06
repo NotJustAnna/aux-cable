@@ -16,7 +16,6 @@ import net.notjustanna.auxcable.api.gateway.SubscriptionRequest
 import net.notjustanna.auxcable.models.*
 import net.notjustanna.auxcable.state.util.Message
 import net.notjustanna.auxcable.state.State
-import net.notjustanna.auxcable.state.util.HttpResponseExceptions
 import java.util.concurrent.TimeUnit
 
 class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
@@ -108,7 +107,7 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
             var latest = jda.guilds.map(Model::convert).sortedBy { it.id }
 
             emitter.setDisposable(
-                Observable.timer(500, TimeUnit.MILLISECONDS).subscribe {
+                Observable.interval(500, TimeUnit.MILLISECONDS).subscribe {
                     // I've learned it's impossible to check for these changes by listening to all the relevant events.
                     // It's way easier to just check the guilds every 500ms and emit the new list if it changed.
                     val current = jda.guilds.map(Model::convert).sortedBy { it.id }
@@ -123,7 +122,7 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
         }
     }
 
-    fun voiceChannelStream(): Observable<VoiceChannelModel> {
+    fun voiceChannelStream(): Observable<CurrentVoiceChannelModel> {
         val channel = state().channel ?: throw GatewayException("UNSUPPORTED_ACTION")
         val jda = channel.jda
         val channelId = channel.id
@@ -137,16 +136,16 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
             }
             jda.addEventListener(listener)
 
-            var latest = Model.convert(channel)
+            var latest = Model.convertCurrent(channel)
 
             emitter.setDisposable(
-                Observable.timer(500, TimeUnit.MILLISECONDS).subscribe {
+                Observable.interval(500, TimeUnit.MILLISECONDS).subscribe {
                     val updated = jda.getVoiceChannelById(channelId)
                     if (updated == null) {
                         emitter.onComplete()
                         return@subscribe
                     }
-                    val current = Model.convert(updated)
+                    val current = Model.convertCurrent(updated)
                     if (latest != current) {
                         latest = current
                         emitter.onNext(current)
@@ -162,7 +161,7 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
         return Observable.create { emitter ->
             var latest = AudioInputs.all.map(Model::convert).sortedBy { "${it.name}<-${it.device}" }
             emitter.setDisposable(
-                Observable.timer(500, TimeUnit.MILLISECONDS).subscribe {
+                Observable.interval(500, TimeUnit.MILLISECONDS).subscribe {
                     // Once again, something which is impossible to listen to.
                     val current = AudioInputs.all.map(Model::convert).sortedBy { "${it.name}<-${it.device}" }
                     if (latest != current) {

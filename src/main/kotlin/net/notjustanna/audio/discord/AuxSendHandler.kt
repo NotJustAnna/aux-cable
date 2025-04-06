@@ -1,5 +1,6 @@
 package net.notjustanna.audio.discord
 
+import com.linecorp.armeria.internal.common.util.TemporaryThreadLocals.acquire
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.audio.AudioSendHandler.INPUT_FORMAT
 import net.notjustanna.audio.native.mixer
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.lang.System.currentTimeMillis
 import java.nio.ByteBuffer
+import java.util.concurrent.Semaphore
 import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.DataLine
 import javax.sound.sampled.TargetDataLine
@@ -22,13 +24,15 @@ class AuxSendHandler(
     val stream: AudioInputStream
 ) : AudioSendHandler, Closeable {
     val frames = Array(50) { ByteBuffer.allocate(FRAME_SIZE) }
-    var readIndex = 0
-    var availableIndex = 0
+    var readIndex = 0L
+    var availableIndex = 0L
+    val lock = Semaphore(1).apply(Semaphore::acquire)
+
     val thread = Thread.ofPlatform().name("AuxSendHandler Thread").start {
-        Thread.sleep(5000)
+        lock.acquire()
         try {
             while (true) {
-                val buffer = frames[readIndex]
+                val buffer = frames[(readIndex % frames.size).toInt()]
                 buffer.clear()
                 while (buffer.hasRemaining()) {
                     val read = stream.read(buffer.array(), buffer.position(), buffer.remaining())
@@ -38,20 +42,20 @@ class AuxSendHandler(
                     buffer.position(buffer.position() + read)
                 }
                 buffer.flip()
-                readIndex = (readIndex + 1) % frames.size
+                readIndex++
 
-                if (readIndex == availableIndex) {
+                if (readIndex == availableIndex + frames.size) {
                     log.warn("JDA is not keeping up with the audio stream.")
                     log.warn("Output will be truncated.")
                     var bytes = 0
-                    val trash = ByteArray(192)
-                    // 192 bytes = 1ms of the target audio format
-                    // so we're discarding audio 1ms at a time.
+                    val trash = ByteArray(1920)
+                    // 1920 bytes = 10ms of the target audio format
+                    // so we're discarding audio 10ms at a time.
                     var lastWarn = currentTimeMillis()
                     while (readIndex == availableIndex) {
                         val read = stream.read(trash)
                         if (read <= 0) {
-                            Thread.sleep(1)
+                            Thread.sleep(10)
                         }
                         bytes += read
 
@@ -66,17 +70,15 @@ class AuxSendHandler(
         } catch (_: InterruptedException) {
             // Do nothing
         }
-
     }
 
     override fun canProvide(): Boolean {
-        // add a buffer of 5 frames
-        return (readIndex + 5) % frames.size != availableIndex
+        lock.release()
+        return readIndex != availableIndex
     }
 
     override fun provide20MsAudio(): ByteBuffer {
-        val buffer = frames[availableIndex]
-        availableIndex = (availableIndex + 1) % frames.size
+        val buffer = frames[(availableIndex++ % frames.size).toInt()]
         return buffer
     }
 
@@ -85,7 +87,6 @@ class AuxSendHandler(
         stream.close()
         target.close()
     }
-
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(AuxSendHandler::class.java)
@@ -99,7 +100,6 @@ class AuxSendHandler(
         const val FRAME_SIZE = 3840
 
         fun open(input: AudioInput): AuxSendHandler? {
-            log.debug("Trying to open AuxSendHandler for $input")
             var attempt = 1
             for (mixerInfo in input.mixers) {
                 try {

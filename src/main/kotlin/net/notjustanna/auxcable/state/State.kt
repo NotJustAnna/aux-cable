@@ -3,6 +3,7 @@ package net.notjustanna.auxcable.state
 import io.reactivex.rxjava3.core.Observable
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.notjustanna.auxcable.models.AudioInputModel
 import net.notjustanna.auxcable.state.util.HttpResponseExceptions
 import net.notjustanna.auxcable.state.util.Message
 
@@ -35,7 +36,7 @@ sealed class State {
         throw HttpResponseExceptions.unsupportedAction
     }
 
-    open fun stream(enabled: Boolean): State {
+    open fun stream(input: AudioInputModel?): State {
         throw HttpResponseExceptions.unsupportedAction
     }
 }

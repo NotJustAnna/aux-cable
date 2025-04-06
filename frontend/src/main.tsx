@@ -6,13 +6,11 @@ import {WebSocketService} from "./services/WebSocketService.tsx";
 import axios from "axios";
 import {HttpContext} from "./contexts/HttpContext.ts";
 
-// const wsProto: Record<string, string> = { 'http:': 'ws:', 'https:': 'wss:' };
+const wsProto: Record<string, string> = { 'http:': 'ws:', 'https:': 'wss:' };
 
-//`${wsProto[window.location.protocol]}//${window.location.host}/api/gateway`,
-const ws = new WebSocketService('ws://localhost:3000/api/gateway');
+const ws = new WebSocketService(`${wsProto[window.location.protocol]}//${window.location.host}/api/gateway`);
 const http = axios.create({
-    // `${(window.location.origin)}/api`
-    baseURL: 'http://localhost:3000/api',
+    baseURL: `${(window.location.origin)}/api`,
     validateStatus: status => status >= 200 && status <= 500,
 });
 

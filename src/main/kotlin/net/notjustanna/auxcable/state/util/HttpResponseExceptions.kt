@@ -9,6 +9,9 @@ object HttpResponseExceptions {
     private fun response(status: HttpStatus, type: String) =
         HttpResponse.of(status, MediaType.JSON, """{"errorType": "$type"}""")
 
+    val noSuchAccount: RuntimeException
+        get() = HttpResponseException.of(response(HttpStatus.BAD_REQUEST, "NO_SUCH_ACCOUNT"))
+
     val inconsistentState: RuntimeException
         get() = HttpResponseException.of(response(HttpStatus.INTERNAL_SERVER_ERROR, "INCONSISTENT_STATE"))
 
@@ -26,6 +29,9 @@ object HttpResponseExceptions {
 
     val rememberMeFailed: RuntimeException
         get() = HttpResponseException.of(response(HttpStatus.BAD_REQUEST, "REMEMBER_ME_FAILED"))
+
+    val rememberMeInvalidToken: RuntimeException
+        get() = HttpResponseException.of(response(HttpStatus.UNAUTHORIZED, "REMEMBER_ME_INVALID_TOKEN"))
 
     val unsupportedAction: RuntimeException
         get() = HttpResponseException.of(response(HttpStatus.BAD_REQUEST, "UNSUPPORTED_ACTION"))

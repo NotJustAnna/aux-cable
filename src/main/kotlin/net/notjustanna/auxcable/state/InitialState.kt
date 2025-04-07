@@ -9,25 +9,26 @@ import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.exceptions.InvalidTokenException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.notjustanna.auxcable.state.util.HttpResponseExceptions
-import net.notjustanna.auxcable.state.util.Logger
+import net.notjustanna.auxcable.state.util.Flow
 import net.notjustanna.auxcable.state.util.RememberMe
 import java.util.concurrent.CompletableFuture
 
 class InitialState(
-    private val logger: Logger = Logger(),
+    override val flow: Flow = Flow(),
     private val stateSubject: BehaviorSubject<State> = BehaviorSubject.create(),
 ) : State() {
-    override val messageStream = logger.subject
     override val stateStream = stateSubject
     override val jda: JDA? = null
     override val channel: VoiceChannel? = null
     override val type: StateType = StateType.IDLE
 
     init {
+        flow.push("state.initial.init")
         stateSubject.onNext(this)
     }
 
     override fun login(token: String, remember: Boolean): State {
+        flow.push("action.login.start")
         if (token.isEmpty()) {
             throw HttpResponseExceptions.emptyToken
         }
@@ -38,23 +39,28 @@ class InitialState(
             account.token
         } else token
 
-        logger.info("Logging in to Discord...")
-
         val future = CompletableFuture<Unit>()
         val listener = EventListener { if (it is ReadyEvent) future.complete(Unit) }
 
+        flow.push("action.login.connecting")
         val jda = try {
             JDABuilder.createLight(actualToken)
                 .setAudioSendFactory(NativeAudioSendFactory())
                 .addEventListeners(listener)
                 .build()
         } catch (e: InvalidTokenException) {
-            throw HttpResponseExceptions.invalidToken
+            flow.push("action.login.invalid-token")
+            throw (
+                if (token.startsWith("RememberMe.id=")) HttpResponseExceptions.rememberMeInvalidToken
+                else HttpResponseExceptions.invalidToken
+            )
         } catch (e: Exception) {
+            flow.push("action.login.unknown-error")
             throw HttpResponseExceptions.unknown("LOGGING_IN_TO_DISCORD", e)
         }
 
         future.join()
+        flow.push("action.login.connected")
         jda.removeEventListener(listener)
 
         val self = jda.selfUser
@@ -62,8 +68,7 @@ class InitialState(
             RememberMe.save(actualToken, self.id, self.effectiveName, self.effectiveAvatarUrl)
         }
 
-        logger.success("Logged in as \"${self.name}\"")
-
-        return LoggedInState(logger, stateSubject, jda)
+        flow.push("action.login.success")
+        return LoggedInState(flow, stateSubject, jda)
     }
 }

@@ -6,6 +6,7 @@ import com.linecorp.armeria.server.annotation.Param
 import com.linecorp.armeria.server.annotation.ProducesJson
 import net.notjustanna.auxcable.models.AccountModel
 import net.notjustanna.auxcable.models.Model
+import net.notjustanna.auxcable.state.util.HttpResponseExceptions
 import net.notjustanna.auxcable.state.util.RememberMe
 
 class AccountService {
@@ -18,7 +19,7 @@ class AccountService {
     @ProducesJson
     @Get("/:id")
     fun get(@Param id: String): AccountModel {
-        return RememberMe.getById(id)?.let(Model::convert) ?: throw IllegalArgumentException("Account not found")
+        return RememberMe.getById(id)?.let(Model::convert) ?: throw HttpResponseExceptions.noSuchAccount
     }
 
     @ProducesJson

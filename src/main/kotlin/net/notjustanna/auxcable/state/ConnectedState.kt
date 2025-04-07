@@ -7,19 +7,19 @@ import net.notjustanna.audio.discord.AuxSendHandler
 import net.notjustanna.audio.system.AudioInputs
 import net.notjustanna.auxcable.models.AudioInputModel
 import net.notjustanna.auxcable.state.util.HttpResponseExceptions
-import net.notjustanna.auxcable.state.util.Logger
+import net.notjustanna.auxcable.state.util.Flow
 
 class ConnectedState(
-    private val logger: Logger,
+    override val flow: Flow,
     private val stateSubject: BehaviorSubject<State>,
     override val jda: JDA,
     private val channelId: String,
 ): State() {
-    override val messageStream = logger.subject
     override val stateStream = stateSubject
     override val type = StateType.CONNECTED
 
     init {
+        flow.push("state.connected.init")
         stateSubject.onNext(this)
     }
 
@@ -34,8 +34,11 @@ class ConnectedState(
         }
 
     override fun disconnect(): State {
+        flow.push("action.disconnect.start")
+        flow.push("action.disconnect.close")
         channel.guild.audioManager.closeAudioConnection()
-        return LoggedInState(logger, stateSubject, jda)
+        flow.push("action.disconnect.success")
+        return LoggedInState(flow, stateSubject, jda)
     }
 
     override fun logout(): State {
@@ -43,6 +46,7 @@ class ConnectedState(
     }
 
     override fun stream(input: AudioInputModel?): State {
+        flow.push("action.stream.start")
         val actualInput = input?.let { AudioInputs.all.find { it.name == input.name && it.device == input.device } }
 
         if (input != null && actualInput == null) {
@@ -54,19 +58,18 @@ class ConnectedState(
             if (prev != null && prev.input == actualInput) {
                 return this // No need to change the input if it's the same.
             }
+            flow.push("action.stream.open")
             val aux = AuxSendHandler.open(actualInput)
+            flow.push("action.stream.opened")
             if (aux != null) {
                 channel.guild.audioManager.sendingHandler = aux
             }
         } else {
+            flow.push("action.stream.close")
             channel.guild.audioManager.sendingHandler = null
         }
         prev?.close()
-        if (actualInput != null) {
-            logger.info("Streaming \"${actualInput.name}\"...")
-        } else {
-            logger.info("Streaming disabled.")
-        }
+        flow.push("action.stream.success")
 
         return this
     }

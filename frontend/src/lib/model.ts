@@ -1,7 +1,6 @@
-
-export interface MessageModel {
-    type: "INFO" | "WARNING" | "SUCCESS" | "ERROR"
-    content: string
+export interface FlowModel {
+    id: string
+    extra?: any;
 }
 
 export interface AccountModel {
@@ -10,10 +9,17 @@ export interface AccountModel {
     imageUrl: string
 }
 
-export interface StateModel {
-    type: "IDLE" |"LOGGED_IN" |"CONNECTED"
-    account?: AccountModel
+interface IdleStateModel {
+    type: "IDLE";
+    account: null;
 }
+
+interface OnlineStateModel {
+    type: "LOGGED_IN" | "CONNECTED";
+    account: AccountModel;
+}
+
+export type StateModel = IdleStateModel | OnlineStateModel;
 
 export interface GuildModel {
     id: string

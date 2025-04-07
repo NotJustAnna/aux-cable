@@ -14,16 +14,20 @@ import net.notjustanna.auxcable.api.gateway.GatewayException
 import net.notjustanna.auxcable.api.gateway.SubscriptionEvent
 import net.notjustanna.auxcable.api.gateway.SubscriptionRequest
 import net.notjustanna.auxcable.models.*
-import net.notjustanna.auxcable.state.util.Message
 import net.notjustanna.auxcable.state.State
+import net.notjustanna.auxcable.state.util.Flow
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
-    private val mapper = JacksonUtil.newDefaultObjectMapper()
+    companion object {
+        private val mapper = JacksonUtil.newDefaultObjectMapper()
+        private val logger = LoggerFactory.getLogger(GatewayService::class.java)
+    }
 
     private val subscriptions = mapOf<String, () -> Observable<out Any>>(
         "currentState" to ::stateStream,
-        "messages" to ::messageStream,
+        "flow" to ::pushStream,
         "guilds" to ::guildStream,
         "currentVoiceChannel" to ::voiceChannelStream,
         "audioInputs" to ::audioInputStream,
@@ -45,7 +49,7 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
                     val (type, enabled) = try {
                         mapper.readValue(frame, SubscriptionRequest::class.java)
                     } catch (e: Exception) {
-                        throw GatewayException("INVALID_INPUT")
+                        throw GatewayException("INVALID_COMMAND")
                     }
 
                     if (enabled) {
@@ -88,8 +92,8 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
         return state().stateStream.map(Model::convert)
     }
 
-    fun messageStream(): Observable<Message> {
-        return state().messageStream
+    fun pushStream(): Observable<Flow.Push> {
+        return state().flow.subject
     }
 
     fun guildStream(): Observable<List<GuildModel>> {
@@ -163,7 +167,12 @@ class GatewayService(private val state: () -> State) : WebSocketServiceHandler {
             emitter.setDisposable(
                 Observable.interval(500, TimeUnit.MILLISECONDS).subscribe {
                     // Once again, something which is impossible to listen to.
-                    val current = AudioInputs.all.map(Model::convert).sortedBy { "${it.name}<-${it.device}" }
+                    val current = try {
+                        AudioInputs.all.map(Model::convert).sortedBy { "${it.name}<-${it.device}" }
+                    } catch (e: Exception) {
+                        logger.error("Failed to load audio inputs", e)
+                        return@subscribe
+                    }
                     if (latest != current) {
                         latest = current
                         emitter.onNext(current)

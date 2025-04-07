@@ -24,11 +24,17 @@ object AudioInputs {
                 inputMap[key] = builder
             }
 
-            mixerInfo.mixer.targetLineInfo.forEach { lineInfo ->
-                builder.addMixer(mixerInfo)
-                if (lineInfo.lineClass == TargetDataLine::class.java) {
-                    validBuilders.add(builder)
+            try {
+                mixerInfo.mixer.targetLineInfo.forEach { lineInfo ->
+                    builder.addMixer(mixerInfo)
+                    if (lineInfo.lineClass == TargetDataLine::class.java) {
+                        validBuilders.add(builder)
+                    }
                 }
+            } catch (ignored: IllegalArgumentException) {
+                // This is thrown when the mixer is not available.
+                // It is not a problem, more of a inconsistent state.
+                // It'll probably get fixed in the next scan.
             }
         }
 
@@ -68,9 +74,12 @@ object AudioInputs {
         }
 
         if (name.contains(" (") && name.endsWith(")")) {
-            // Thanks Windows, we have the device name in parentheses at the end.
+            // Thanks Windows and Mac, we have the device name in parentheses at the end.
             device = name.substringAfterLast(" (").substringBeforeLast(")")
             name = name.substringBeforeLast(" (")
+        } else if (name.contains(" [") && name.endsWith("]")) {
+            device = name.substringAfterLast(" [").substringBeforeLast("]")
+            name = name.substringBeforeLast(" [")
         }
         return Pair(name, device)
     }

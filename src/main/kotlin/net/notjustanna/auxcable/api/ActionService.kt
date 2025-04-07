@@ -7,7 +7,7 @@ import net.notjustanna.auxcable.api.action.LoginAction
 import net.notjustanna.auxcable.api.action.StreamAction
 import net.notjustanna.auxcable.state.State
 
-class ActionService(private val state: () -> State) {
+class ActionService(private val state: () -> State, private val shutdownHook: () -> Unit) {
     @ConsumesJson
     @Post("/login")
     fun login(action: LoginAction) {
@@ -34,5 +34,10 @@ class ActionService(private val state: () -> State) {
     @Post("/stream")
     fun stream(action: StreamAction) {
         state().stream(action.input)
+    }
+
+    @Post("/shutdown")
+    fun shutdown() {
+        shutdownHook()
     }
 }

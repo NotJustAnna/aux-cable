@@ -12,14 +12,22 @@ version = "2.0"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://jitpack.io") }
+//    maven { url = uri("https://jitpack.io") }
+    maven {
+        url = uri("https://github.com/NotJustAnna/webview_java/raw/maven")
+        content { includeGroup("net.notjustanna.webview") }
+    }
 }
 
 dependencies {
     implementation("com.linecorp.armeria:armeria:1.32.3")
     implementation("com.linecorp.armeria:armeria-rxjava3:1.32.3")
     implementation("com.linecorp.armeria:armeria-logback:1.32.3")
-    implementation("com.github.webview:webview_java:1.3.0")
+//    implementation("com.github.webview:webview_java:1.3.0")
+
+    implementation("net.notjustanna.webview:webview_java:1.0.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-all-natives:1.0.0+wv0.12.0-nightly.1")
+
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")
     implementation("club.minnced:udpqueue-native-win-x86:0.2.9")

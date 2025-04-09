@@ -5,9 +5,9 @@ import com.linecorp.armeria.server.cors.CorsService
 import com.linecorp.armeria.server.docs.DocService
 import com.linecorp.armeria.server.file.FileService
 import com.linecorp.armeria.server.websocket.WebSocketService
-import dev.webview.Webview
 import net.notjustanna.auxcable.api.*
 import net.notjustanna.auxcable.state.State
+import net.notjustanna.webview.WebviewStandalone
 import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
@@ -68,12 +68,15 @@ fun main(args: Array<String>) {
     shutdownHooks += { server.stop() }
 
     if (!args.contains("--no-webview")) {
+        val url = "http://localhost:$port/index.html?mode=app"
         var flag = true
         try {
-            val webview = Webview(true).apply {
-                loadURL("http://localhost:$port/index.html")
-                setTitle("Aux Cable")
-            }
+            val webview = WebviewStandalone(true)
+                .setSize(800, 600)
+                .setTitle("Aux Cable")
+                .navigate(url)
+                .setDarkMode(true)
+                .bringToFront()
             flag = false
 
             val webviewShutdown = { webview.close() }
@@ -88,7 +91,7 @@ fun main(args: Array<String>) {
                 logger.warn("Could not start webview, falling back to browser.")
                 // Somehow the webview managed to fail to load. Great.
                 try {
-                    Desktop.getDesktop().browse(URI("https://kx.studio/Applications"))
+                    Desktop.getDesktop().browse(URI(url))
                 } catch (e: Exception) {
                     logger.error("Could not load browser.", e)
                 }

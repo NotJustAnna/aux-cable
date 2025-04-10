@@ -8,6 +8,7 @@ import com.linecorp.armeria.server.websocket.WebSocketService
 import net.notjustanna.auxcable.api.*
 import net.notjustanna.auxcable.state.State
 import net.notjustanna.webview.WebviewStandalone
+import net.notjustanna.webview.interop.JacksonWebviewInterop
 import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
@@ -43,7 +44,6 @@ fun main(args: Array<String>) {
         http(port)
 
         annotatedService("/api/accounts", AccountService())
-        annotatedService("/api/desktop", DesktopService())
         annotatedService("/api/actions", ActionService(state, shutdown))
         annotatedService("/api/invite", InviteService(state))
         service(
@@ -67,17 +67,34 @@ fun main(args: Array<String>) {
     server.start().join()
     shutdownHooks += { server.stop() }
 
-    if (!args.contains("--no-webview")) {
-        val url = "http://localhost:$port/index.html?mode=app"
+    if (!args.contains("--no-webview") && Desktop.isDesktopSupported()) {
+        val url = "http://localhost:$port"
         var flag = true
         try {
             val webview = WebviewStandalone(true)
                 .setSize(800, 600)
+                .setMinSize(400, 300)
                 .setTitle("Aux Cable")
                 .navigate(url)
                 .setDarkMode(true)
                 .bringToFront()
-            flag = false
+
+            val interop = object {
+                fun callShutdown() {
+                    shutdown()
+                }
+                fun openUrl(url: String) {
+                    try {
+                        Desktop.getDesktop().browse(URI(url))
+                    } catch (e: Exception) {
+                        logger.error("Could not load browser.", e)
+                    }
+                }
+            }
+
+            JacksonWebviewInterop(webview.webview)
+                .bindMethod("Webview__openUrl", interop, "openUrl")
+                .bindMethod("Webview__shutdown", interop, "callShutdown")
 
             val webviewShutdown = { webview.close() }
             shutdownHooks += webviewShutdown
@@ -88,7 +105,7 @@ fun main(args: Array<String>) {
             shutdown()
         } catch (ex: Exception) {
             if (flag) {
-                logger.warn("Could not start webview, falling back to browser.")
+                logger.warn("Could not start webview, falling back to browser.", ex)
                 // Somehow the webview managed to fail to load. Great.
                 try {
                     Desktop.getDesktop().browse(URI(url))

@@ -6,7 +6,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {ActionLinkButton, LinkButton} from "@/components/common/link-button.tsx";
+import {ExternalLink, LinkButton} from "@/components/common/link-button.tsx";
 import {Button} from "@/components/ui/button.tsx";
 
 export function NewUserDialog() {
@@ -23,7 +23,7 @@ export function NewUserDialog() {
             </DialogHeader>
             <ul className="ml-6 list-disc [&>li]:mt-2">
                 <li>
-                    <span className="font-semibold">First,</span> go to <ActionLinkButton method="post" action="/desktop/discord-developer-portal">Discord's Developer Portal</ActionLinkButton> and log in with your own account.
+                    <span className="font-semibold">First,</span> go to <ExternalLink href="https://discord.com/developers/applications">Discord's Developer Portal</ExternalLink> and log in with your own account.
                 </li>
                 <li>
                     Click on <span className="font-semibold">"New Application"</span> button,

@@ -6,14 +6,14 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog.tsx";
-import {ActionLinkButton, LinkButton} from "@/components/common/link-button.tsx";
+import {ExternalLink, LinkButton} from "@/components/common/link-button.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.tsx"
 
 function WindowsTab() {
     return <div>
         <p>
-            On Windows, you can install <ActionLinkButton method="post" action="/desktop/vb-cable">VB-Cable</ActionLinkButton> or <ActionLinkButton method="post" action="/desktop/voicemeeter">VoiceMeeter</ActionLinkButton> to
+            On Windows, you can install <ExternalLink href="https://vb-audio.com/Cable/">VB-Cable</ExternalLink> or <ExternalLink href="https://vb-audio.com/Voicemeeter/">VoiceMeeter</ExternalLink> to
             create a virtual audio device and route the audio to Discord.
         </p>
     </div>;
@@ -25,7 +25,7 @@ function MacosTab() {
             (Disclaimer: I am not a Mac user, so I don't know if this works)
         </p>
         <p>
-            On Mac, you can install <ActionLinkButton method="post" action="/desktop/blackhole">BlackHole</ActionLinkButton> or <ActionLinkButton method="post" action="/desktop/ndi-tools">NDI Tools</ActionLinkButton> to
+            On Mac, you can install <ExternalLink href="https://existential.audio/blackhole/">BlackHole</ExternalLink> or <ExternalLink href="https://ndi.video/tools/virtual-input/">NDI Tools</ExternalLink> to
             create a virtual audio device and route the audio to Discord.
         </p>
     </div>;
@@ -37,7 +37,7 @@ function LinuxTab() {
             (Disclaimer: For advanced users only)
         </p>
         <p>
-            On Linux, <ActionLinkButton method="post" action="/desktop/jack">JACK</ActionLinkButton> with <ActionLinkButton method="post" action="/desktop/cadence">Cadence</ActionLinkButton> is the best option to
+            On Linux, <ExternalLink href="https://jackaudio.org/">JACK</ExternalLink> with <ExternalLink href="https://kx.studio/Applications">Cadence</ExternalLink> is the best option to
             route the audio to Discord.
         </p>
     </div>;

@@ -25,8 +25,9 @@ dependencies {
     implementation("com.linecorp.armeria:armeria-logback:1.32.3")
 //    implementation("com.github.webview:webview_java:1.3.0")
 
-    implementation("net.notjustanna.webview:webview_java:1.0.0+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-all-natives:1.0.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java:1.1.2+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-all-natives:1.1.2+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.1.2+wv0.12.0-nightly.1")
 
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")

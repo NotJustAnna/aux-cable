@@ -1,8 +1,5 @@
 import classed from "classed-components";
-import {ComponentProps, FC} from "react";
-import {AxiosRequestConfig} from "axios";
-import {useHttp} from "@/contexts/http.ts";
-import {handleIfError} from "@/lib/error-handling.ts";
+import {ComponentProps, FC, ReactNode, MouseEvent} from "react";
 
 // This is a button that looks like a link. Since we don't have pages in our app, we use it to navigate to other pages.
 
@@ -10,26 +7,26 @@ export const LinkButton: FC<ComponentProps<'button'>> = classed.button`
     text-indigo-400 hover:text-indigo-300 text-center underline italic
 `;
 
-interface ActionProps {
-    method: AxiosRequestConfig['method'],
-    action: string,
-    data?: AxiosRequestConfig['data'],
-    toastId?: string,
+export const Link : FC<ComponentProps<'a'>> = classed.a`
+    text-indigo-400 hover:text-indigo-300 text-center underline italic
+`;
+
+interface ExternalLinkProps {
+    href: string,
+    children: ReactNode,
 }
 
-type ActionLinkButtonProps = ActionProps & ComponentProps<typeof LinkButton>;
-
-export function ActionLinkButton({method, action, data, toastId, ...props}: ActionLinkButtonProps) {
-    const http = useHttp();
-    const onClick = () => {
-        http.request({
-            method,
-            url: action,
-            data: data === undefined ? {} : data,
-        }).then(handleIfError(toastId === undefined ? `action:${action}` : toastId));
+export function ExternalLink({href, children}: ExternalLinkProps) {
+    const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
+        if (typeof Webview__openUrl !== "undefined") {
+            e.preventDefault();
+            Webview__openUrl(href);
+        }
     };
 
     return (
-        <LinkButton onClick={onClick} {...props} />
-    )
+        <Link href={href} target="_blank" onClick={onClick}>
+            {children}
+        </Link>
+    );
 }

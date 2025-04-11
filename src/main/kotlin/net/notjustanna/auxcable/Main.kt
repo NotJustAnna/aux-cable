@@ -77,7 +77,8 @@ fun main(args: Array<String>) {
                 .setTitle("Aux Cable")
                 .navigate(url)
                 .setDarkMode(true)
-                .bringToFront()
+
+            webview.dispatch { webview.bringToFront() }
 
             val interop = object {
                 fun callShutdown() {

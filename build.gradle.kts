@@ -235,21 +235,21 @@ project(":packaging").subprojects {
             outputs.dir(dir)
         }
 
-        val postJpackage: Delete by tasks.creating(Delete::class) {
-            dependsOn(jpackage)
-            val name = jpackage.extra.get("name").toString()
-            delete(jpackageDir.get().dir("out/$name/runtime/legal"))
-        }
+        // val postJpackage: Delete by tasks.creating(Delete::class) {
+        //     dependsOn(jpackage)
+        //     val name = jpackage.extra.get("name").toString()
+        //     delete(jpackageDir.get().dir("out/$name/runtime/legal"))
+        // }
 
         val distJpackage: Zip by tasks.creating(Zip::class) {
-            dependsOn(jpackage, postJpackage)
+            dependsOn(jpackage)
             val name = jpackage.extra.get("name").toString()
             archiveBaseName = rootProject.name
             archiveVersion = rootProject.version.toString()
             archiveAppendix = project.name
             archiveExtension = "zip"
             destinationDirectory = project.layout.buildDirectory.dir("distributions")
-            from(jpackageDir.get().dir("out/$name"))
+            from(jpackageDir.get().dir("out"))
         }
 
         tasks.assemble {

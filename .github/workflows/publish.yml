@@ -88,6 +88,9 @@ jobs:
           path: ./gh-artifact
           merge-multiple: true
 
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

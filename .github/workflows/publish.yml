@@ -42,13 +42,21 @@ jobs:
 
       - name: Cleanup artifacts
         run: |
+          
+          ls ./packaging/*/build/jpackage/out/*
+        
+          
           mkdir .artifact
+          echo "=========== Main JARs ==========="
           ls ./build/libs/*-all.jar
           mv ./build/libs/*-all.jar ./.artifact/ || true
+          echo "=========== Optimized JARs ==========="
           ls ./packaging/**/build/libs/*
           mv ./packaging/**/build/libs/* ./.artifact/ || true
+          echo "=========== Distributions ==========="
           ls ./packaging/**/build/distributions/*
           mv ./packaging/**/build/distributions/* ./.artifact/ || true
+          echo "=========== Result ==========="
           ls ./artifact/*
 
       - name: Upload artifacts

@@ -117,7 +117,7 @@ val mainClass = "net.notjustanna.Application"
 
 val veryOptimizedJvmOptions = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1"
 
-val jlinkOptions = "--strip-native-commands --strip-debug --no-header-files --no-man-pages --compress=zip-9"
+val jlinkOptions = "--verbose --strip-native-commands --strip-debug --no-header-files --no-man-pages --compress=zip-9"
 
 val nativeFolders = mapOf(
     "natives" to listOf("darwin", "linux-aarch64", "linux-arm", "linux-musl-aarch64", "linux-musl-x86-64", "linux-x86",
@@ -223,7 +223,7 @@ project(":packaging").subprojects {
             extra.set("name", name)
 
             commandLine(
-                "jpackage", "--type", "app-image", "--name", name,
+                "jpackage", "--verbose", "--type", "app-image", "--name", name,
                 "--input", prepareJpackage.destinationDir.absolutePath,
                 "--dest", dir.asFile.absolutePath,
                 "--main-jar", optimizedJar.archiveFile.get().asFile.name,

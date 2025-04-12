@@ -138,17 +138,23 @@ val allowedNatives = mapOf(
 
 val requiredModules = listOf("java.net.http","java.desktop","java.logging","java.naming","jdk.unsupported","java.sql","jdk.crypto.ec","jdk.zipfs")
 
-val osSpecific = when {
-    System.getProperty("os.name").lowercase().contains("windows") -> {
-        listOf("win-x86","win-x64")
+val osSpecific = let {
+    val osName = System.getProperty("os.name").lowercase()
+    val osArch = System.getProperty("os.arch").lowercase()
+
+    when {
+        osName.contains("windows") -> when {
+            osArch.contains("arm64") -> listOf("win-x64")
+            osArch.contains("x86") -> listOf("win-x86")
+            else -> emptyList()
+        }
+        osName.contains("linux") -> when {
+            osArch.contains("x86_64") -> listOf("linux-x64")
+            else -> emptyList()
+        }
+        osName.contains("mac") -> listOf("darwin")
+        else -> emptyList()
     }
-    System.getProperty("os.name").lowercase().contains("linux") -> {
-        listOf("linux-x64")
-    }
-    System.getProperty("os.name").lowercase().contains("mac") -> {
-        listOf("darwin")
-    }
-    else -> emptyList()
 }
 
 project(":packaging").subprojects {
@@ -158,6 +164,7 @@ project(":packaging").subprojects {
     }
 
     val optimizedJar: Zip by tasks.creating(Zip::class) {
+        dependsOn(rootProject.tasks.shadowJar)
         archiveBaseName = rootProject.name
         archiveVersion = rootProject.version.toString()
         archiveAppendix = project.name
@@ -206,46 +213,52 @@ project(":packaging").subprojects {
     }
 
     if (project.name in osSpecific) {
+        val jpackageDir = project.layout.buildDirectory.dir("jpackage")
 
         val prepareJpackage: Copy by tasks.creating(Copy::class) {
             dependsOn(optimizedJar)
             from(optimizedJar)
-            into(project.layout.buildDirectory.dir("jpackage/lib"))
+            into(jpackageDir.get().dir("lib"))
         }
 
         val cleanJpackage: Delete by tasks.creating(Delete::class) {
-            delete(project.layout.buildDirectory.dir("jpackage/out"))
+            delete(jpackageDir.get().dir("out"))
         }
 
         val jpackage: Exec by tasks.creating(Exec::class) {
             dependsOn(prepareJpackage, cleanJpackage)
+            val dir = jpackageDir.get().dir("out")
+            val name = "AuxCable"
+            extra.set("name", name)
+
             commandLine(
-                "jpackage",
-                "--type", "app-image",
-                "--name", "AuxCable",
+                "jpackage", "--type", "app-image", "--name", name,
                 "--input", prepareJpackage.destinationDir.absolutePath,
-                "--dest", project.layout.buildDirectory.dir("jpackage/out").get().asFile.absolutePath,
+                "--dest", dir.asFile.absolutePath,
                 "--main-jar", optimizedJar.archiveFile.get().asFile.name,
                 "--main-class", mainClass,
                 "--jlink-options", jlinkOptions,
                 "--java-options", veryOptimizedJvmOptions,
                 "--add-modules", requiredModules.joinToString(",")
             )
+            outputs.dir(dir)
         }
 
         val postJpackage: Delete by tasks.creating(Delete::class) {
             dependsOn(jpackage)
-            delete(project.layout.buildDirectory.dir("jpackage/out/AuxCable/runtime/legal"))
+            val name = jpackage.extra.get("name").toString()
+            delete(jpackageDir.get().dir("out/$name"))
         }
 
         val distJpackage: Zip by tasks.creating(Zip::class) {
             dependsOn(jpackage, postJpackage)
+            val name = jpackage.extra.get("name").toString()
             archiveBaseName = rootProject.name
             archiveVersion = rootProject.version.toString()
             archiveAppendix = project.name
             archiveExtension = "zip"
             destinationDirectory = project.layout.buildDirectory.dir("distributions")
-            from(project.layout.buildDirectory.dir("jpackage/out/AuxCable"))
+            from(jpackageDir.get().dir("out/$name"))
         }
 
         tasks.assemble {

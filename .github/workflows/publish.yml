@@ -1,0 +1,89 @@
+name: Gradle Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            tasks: "publish"
+          - os: ubuntu-latest
+            arch: x86
+            tasks: "distJpackage"
+          - os: macos-latest
+            tasks: "distJpackage"
+          - os: windows-latest
+            arch: x64
+            tasks: "distJpackage"
+          - os: windows-latest
+            arch: x86
+            tasks: "distJpackage createExe"
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          architecture: $${ matrix.arch }
+
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+      - name: Build with Gradle
+        run: ./gradlew ${{ matrix.tasks }}
+
+      - name: Cleanup artifacts
+        run: |
+          mkdir .artifact
+          mv build/libs/*-all.jar .artifact/ || true
+          mv packaging/**/build/libs/* .artifact/ || true
+          mv packaging/**/build/distributions/* .artifact/ || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.os }}-${{ matrix.arch || 'all' }}
+          path: .artifact/
+
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    needs: build
+    steps:
+      - name: Merge package artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          delete-merged: true
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: 'merged-artifacts'
+          path: .
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create --draft $VERSION ".artifact/*"

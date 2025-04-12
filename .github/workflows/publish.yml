@@ -75,6 +75,9 @@ jobs:
       packages: write
     needs: build
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Merge package artifacts
         uses: actions/upload-artifact/merge@v4
         with:
@@ -87,9 +90,6 @@ jobs:
           name: 'package-all'
           path: ./gh-artifact
           merge-multiple: true
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Create GitHub Release
         env:

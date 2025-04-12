@@ -157,8 +157,8 @@ project(":packaging").subprojects {
     val optimizedJar: Zip by tasks.creating(Zip::class) {
         dependsOn(rootProject.tasks.shadowJar)
         archiveBaseName = rootProject.name
-        archiveVersion = rootProject.version.toString()
-        archiveAppendix = project.name
+        archiveVersion = project.version.toString()
+        archiveClassifier = project.name
         archiveExtension = "jar"
         destinationDirectory = project.layout.buildDirectory.dir("libs")
 
@@ -180,7 +180,7 @@ project(":packaging").subprojects {
 
     if (project.name.startsWith("win-")) {
         launch4j {
-            outfile = "${rootProject.name}-${project.name.split('-').last()}-${project.version}.exe"
+            outfile = "${rootProject.name}-${project.version}-${project.name}.exe"
             outputDir = "distributions"
             mainClassName = mainClass
             copyConfigurable = listOf<Any>()
@@ -190,7 +190,7 @@ project(":packaging").subprojects {
             priority = "high"
             productName = "AuxCable"
             jvmOptions.addAll(veryOptimizedJvmOptions.split(" "))
-            version = rootProject.version.toString()
+            version = project.version.toString()
             description = "An open-source, cross-platform, and lightweight Aux Cable for your Discord servers."
         }
 
@@ -243,10 +243,9 @@ project(":packaging").subprojects {
 
         val distJpackage: Zip by tasks.creating(Zip::class) {
             dependsOn(jpackage)
-            val name = jpackage.extra.get("name").toString()
             archiveBaseName = rootProject.name
-            archiveVersion = rootProject.version.toString()
-            archiveAppendix = project.name
+            archiveVersion = project.version.toString()
+            archiveClassifier = project.name
             archiveExtension = "zip"
             destinationDirectory = project.layout.buildDirectory.dir("distributions")
             from(jpackageDir.get().dir("out"))

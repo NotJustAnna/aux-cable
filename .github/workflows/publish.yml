@@ -40,12 +40,18 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew ${{ matrix.tasks }}
 
-      - name: Cleanup artifacts
+      - name: Prepare artifacts (1/3)
+        run: mkdir gh-artifact
+
+      - name: Prepare artifacts (2/3)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          mkdir gh-artifact
           echo "=========== Main JARs ==========="
           ls ./build/libs/*-all.jar
           mv ./build/libs/*-all.jar ./gh-artifact/ || true
+
+      - name: Prepare artifacts (3/3)
+        run: |
           echo "=========== Optimized JARs ==========="
           ls ./packaging/**/build/libs/*
           mv ./packaging/**/build/libs/* ./gh-artifact/ || true
@@ -72,13 +78,14 @@ jobs:
       - name: Merge package artifacts
         uses: actions/upload-artifact/merge@v4
         with:
+          name: 'package-all'
           delete-merged: true
 
       - name: Download package artifacts
         uses: actions/download-artifact@v4
         with:
-          name: 'merged-artifacts'
-          path: .
+          name: 'package-all'
+          path: ./gh-artifact
           merge-multiple: true
 
       - name: Create GitHub Release
@@ -86,4 +93,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
         run: |
-          gh release create --draft $VERSION "gh-artifact/*"
+          gh release create --draft $VERSION "./gh-artifact/*"

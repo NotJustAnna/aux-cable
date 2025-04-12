@@ -1,0 +1,10 @@
+package net.notjustanna.models.http.input;
+
+import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.annotation.ReflectiveAccess;
+import io.micronaut.serde.annotation.Serdeable;
+
+@Serdeable
+@ReflectiveAccess
+public record LoginInput(@NonNull String token, boolean remember) {
+}

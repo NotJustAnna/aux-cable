@@ -40,7 +40,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          architecture: $${ matrix.arch }
+          architecture: ${{ matrix.arch }}
 
 
       - name: Setup Gradle

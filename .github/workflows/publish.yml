@@ -14,18 +14,18 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x64
-            tasks: "publish"
+            tasks: "npmInstall publish"
           - os: ubuntu-latest
             arch: x86
-            tasks: "distJpackage"
+            tasks: "npmInstall distJpackage"
           - os: macos-latest
-            tasks: "distJpackage"
+            tasks: "npmInstall distJpackage"
           - os: windows-latest
             arch: x64
-            tasks: "distJpackage"
+            tasks: "npmInstall distJpackage"
           - os: windows-latest
             arch: x86
-            tasks: "distJpackage createExe"
+            tasks: "npmInstall distJpackage createExe"
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write

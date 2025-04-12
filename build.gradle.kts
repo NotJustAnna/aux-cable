@@ -131,7 +131,6 @@ val nativeFolders = mapOf(
 
 val allowedNatives = mapOf(
     "darwin" to listOf("darwin", "darwin-aarch64", "darwin-x86-64"),
-    "win-x86" to listOf("win-x86", "win32-x86", "windows-x86"),
     "win-x64" to listOf("win-x86-64", "win32-x86-64", "windows-x86-64"),
     "linux-x64" to listOf("linux-x86-64", "linux-musl-x86-64")
 )
@@ -140,18 +139,10 @@ val requiredModules = listOf("java.net.http","java.desktop","java.logging","java
 
 val osSpecific = let {
     val osName = System.getProperty("os.name").lowercase()
-    val osArch = System.getProperty("os.arch").lowercase()
 
     when {
-        osName.contains("windows") -> when {
-            osArch.contains("arm64") -> listOf("win-x64")
-            osArch.contains("x86") -> listOf("win-x86")
-            else -> emptyList()
-        }
-        osName.contains("linux") -> when {
-            osArch.contains("x86_64") -> listOf("linux-x64")
-            else -> emptyList()
-        }
+        osName.contains("windows") -> listOf("win-x64")
+        osName.contains("linux") -> listOf("linux-x64")
         osName.contains("mac") -> listOf("darwin")
         else -> emptyList()
     }

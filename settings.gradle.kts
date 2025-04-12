@@ -3,7 +3,7 @@ plugins {
 }
 rootProject.name = "aux-cable"
 
-val supportedPackages = listOf("win-x86", "win-x64", "darwin", "linux-x64")
+val supportedPackages = listOf("darwin", "linux-x64", "win-x64")
     .map { ":packaging:$it" }
 
 include(":frontend", ":packaging", *supportedPackages.toTypedArray())

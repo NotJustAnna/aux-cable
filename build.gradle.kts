@@ -238,7 +238,7 @@ project(":packaging").subprojects {
         val postJpackage: Delete by tasks.creating(Delete::class) {
             dependsOn(jpackage)
             val name = jpackage.extra.get("name").toString()
-            delete(jpackageDir.get().dir("out/$name"))
+            delete(jpackageDir.get().dir("out/$name/runtime/legal"))
         }
 
         val distJpackage: Zip by tasks.creating(Zip::class) {

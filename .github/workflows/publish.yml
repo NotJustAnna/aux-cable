@@ -42,25 +42,25 @@ jobs:
 
       - name: Cleanup artifacts
         run: |
-          mkdir .artifact
+          mkdir gh-artifact
           echo "=========== Main JARs ==========="
           ls ./build/libs/*-all.jar
-          mv ./build/libs/*-all.jar ./.artifact/ || true
+          mv ./build/libs/*-all.jar ./gh-artifact/ || true
           echo "=========== Optimized JARs ==========="
           ls ./packaging/**/build/libs/*
-          mv ./packaging/**/build/libs/* ./.artifact/ || true
+          mv ./packaging/**/build/libs/* ./gh-artifact/ || true
           echo "=========== Distributions ==========="
           ls ./packaging/**/build/distributions/*
-          mv ./packaging/**/build/distributions/* ./.artifact/ || true
+          mv ./packaging/**/build/distributions/* ./gh-artifact/ || true
           echo "=========== Result ==========="
-          ls ./.artifact/*
+          ls ./gh-artifact/*
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           name: package-${{ matrix.os }}
-          path: ./.artifact/*
+          path: ./gh-artifact/*
 
   publish:
     runs-on: ubuntu-latest
@@ -86,4 +86,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
         run: |
-          gh release create --draft $VERSION ".artifact/*"
+          gh release create --draft $VERSION "gh-artifact/*"

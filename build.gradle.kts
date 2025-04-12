@@ -213,8 +213,12 @@ project(":packaging").subprojects {
             into(project.layout.buildDirectory.dir("jpackage/lib"))
         }
 
+        val cleanJpackage: Delete by tasks.creating(Delete::class) {
+            delete(project.layout.buildDirectory.dir("jpackage/out"))
+        }
+
         val jpackage: Exec by tasks.creating(Exec::class) {
-            dependsOn(prepareJpackage)
+            dependsOn(prepareJpackage, cleanJpackage)
             commandLine(
                 "jpackage",
                 "--type", "app-image",

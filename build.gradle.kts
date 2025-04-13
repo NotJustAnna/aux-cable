@@ -7,7 +7,7 @@ plugins {
 
 allprojects {
     group = "net.notjustanna"
-    version = "3.1"
+    version = "3.1.1"
 
     repositories {
         mavenCentral()

@@ -27,9 +27,9 @@ dependencies {
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     runtimeOnly("ch.qos.logback:logback-classic")
 
-    implementation("net.notjustanna.webview:webview_java:1.3.0+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-all-natives:1.3.0+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.3.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java:1.3.1+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-all-natives:1.3.1+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.3.1+wv0.12.0-nightly.1")
 
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")
@@ -81,35 +81,13 @@ tasks.shadowJar {
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude(
-        "META-INF/maven/**",
-        "META-INF/license/**",
-        "META-INF/versions/9/**",
-        "META-INF/versions/10/**",
-        "META-INF/versions/11/**",
-        "META-INF/versions/12/**",
-        "META-INF/versions/13/**",
-        "META-INF/versions/14/**",
-        "META-INF/versions/15/**",
-        "META-INF/versions/16/**",
-        "META-INF/versions/17/**",
-        "META-INF/versions/18/**",
-        "META-INF/versions/19/**",
-        "META-INF/versions/20/**",
-        "META-INF/micrometer-*.properties",
-        "META-INF/LGPL2.1",
-        "META-INF/AL2.0",
-        "META-INF/*-LICENSE",
-        "META-INF/LICENSE",
-        "META-INF/LICENSE.txt",
-        "META-INF/LICENSE.md",
-        "META-INF/*-NOTICE",
-        "META-INF/NOTICE",
-        "META-INF/NOTICE.md",
-        "META-INF/NOTICE.txt",
-        "META-INF/COPYRIGHT",
-        "META-INF/com.android.tools/**",
-        "META-INF/proguard/**",
-        "META-INF/native-image/**"
+        "META-INF/maven/**", "META-INF/license/**", "META-INF/versions/9/**", "META-INF/versions/10/**",
+        "META-INF/versions/11/**", "META-INF/versions/12/**", "META-INF/versions/13/**", "META-INF/versions/14/**",
+        "META-INF/versions/15/**", "META-INF/versions/16/**", "META-INF/versions/17/**", "META-INF/versions/18/**",
+        "META-INF/versions/19/**", "META-INF/versions/20/**", "META-INF/micrometer-*.properties",
+        "META-INF/LGPL2.1", "META-INF/AL2.0", "META-INF/*-LICENSE", "META-INF/LICENSE", "META-INF/LICENSE.txt",
+        "META-INF/LICENSE.md", "META-INF/*-NOTICE", "META-INF/NOTICE", "META-INF/NOTICE.md", "META-INF/NOTICE.txt",
+        "META-INF/COPYRIGHT", "META-INF/com.android.tools/**", "META-INF/proguard/**", "META-INF/native-image/**"
     )
 }
 
@@ -218,21 +196,23 @@ project(":packaging").subprojects {
 
         val jpackage: Exec by tasks.creating(Exec::class) {
             dependsOn(prepareJpackage, cleanJpackage)
-            val dir = jpackageDir.get().dir("out")
+            val outputDir = jpackageDir.get().dir("out")
             val name = "AuxCable"
             extra.set("name", name)
+            val resourceDir = rootProject.layout.projectDirectory.dir("jpackage-res")
 
             commandLine(
                 "jpackage", "--verbose", "--type", "app-image", "--name", name,
                 "--input", prepareJpackage.destinationDir.absolutePath,
-                "--dest", dir.asFile.absolutePath,
+                "--resource-dir", resourceDir.asFile.absolutePath,
+                "--dest", outputDir.asFile.absolutePath,
                 "--main-jar", optimizedJar.archiveFile.get().asFile.name,
                 "--main-class", mainClass,
                 "--jlink-options", jlinkOptions,
                 "--java-options", veryOptimizedJvmOptions,
                 "--add-modules", requiredModules.joinToString(",")
             )
-            outputs.dir(dir)
+            outputs.dir(outputDir)
         }
 
         // val postJpackage: Delete by tasks.creating(Delete::class) {

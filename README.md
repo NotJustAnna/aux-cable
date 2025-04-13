@@ -31,3 +31,7 @@ You'll need to create a Discord bot to use Aux Cable. Instructions can be found 
 ![Server list](.github/readme/%7B7420EE42-A987-486D-A58E-E88E3A775209%7D.png)
 ![No Servers](.github/readme/%7B286DEB27-7FB5-427A-A9EF-CA03CE6D9540%7D.png)
 ![Connected to channel](.github/readme/%7B67A1DC9A-D76D-422C-A720-BBAD74207D1F%7D.png)
+
+## About
+
+Icon by [Lucide](https://lucide.dev/).

@@ -18,13 +18,13 @@ public class WebviewService {
 
     private final Thread thread;
     private final EmbeddedServer server;
-    private AutoCloseable closeable;
+    private Runnable webviewShutdown;
 
     public WebviewService(EmbeddedServer server) {
         this.server = server;
         this.thread = Thread.ofPlatform()
             .name("Webview Thread")
-            .daemon(false)
+            .daemon(true)
             .unstarted(this::startWebview);
     }
 
@@ -37,14 +37,10 @@ public class WebviewService {
     }
 
     public void callShutdown() {
-        AutoCloseable webview = this.closeable;
-        this.closeable = null;
-        if (webview != null) {
-            try {
-                webview.close();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        Runnable webviewShutdown = this.webviewShutdown;
+        this.webviewShutdown = null;
+        if (webviewShutdown != null) {
+            webviewShutdown.run();
         }
         server.stop();
     }
@@ -67,11 +63,11 @@ public class WebviewService {
                 .bindMethod("Webview__openUrl", this, "openUrl")
                 .bindMethod("Webview__shutdown", this, "callShutdown");
 
-            this.closeable = webview;
+            this.webviewShutdown = () -> webview.dispatch(webview::close);
             webview.run();
             webview.close();
-            if (this.closeable != null) {
-                this.closeable = null;
+            if (this.webviewShutdown != null) {
+                this.webviewShutdown = null;
                 flag_webviewFault = false;
                 callShutdown();
             }
@@ -100,21 +96,8 @@ public class WebviewService {
 
     @EventListener
     public void onShutdown(ApplicationShutdownEvent event) {
-        if (closeable != null) {
-            try {
-                closeable.close();
-            } catch (Exception e) {
-                log.error("Failed to close webview", e);
-            }
-        }
-        if (!thread.isAlive()) {
-            return;
-        }
-        thread.interrupt();
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (this.webviewShutdown != null) {
+            this.webviewShutdown.run();
         }
     }
 }

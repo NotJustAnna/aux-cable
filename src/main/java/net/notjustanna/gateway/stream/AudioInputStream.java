@@ -18,7 +18,8 @@ public class AudioInputStream implements GatewayStream {
         // Optimized to use a single flux for multiple subscriptions.
         this.flux = tick.getTick().map(ignored -> AudioInputs.all().stream().map(AudioInputModel::of).collect(Collectors.toList()))
             .distinctUntilChanged()
-            .share();
+            .replay(1)
+            .refCount();
     }
 
     @Override

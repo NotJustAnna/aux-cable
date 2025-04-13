@@ -26,7 +26,7 @@ public class GuildStream implements GatewayStream {
         this.tick = tick.getTick();
         this.stateService = stateService;
         // Optimized to use a single flux for multiple subscriptions.
-        this.flux = Flux.create(this::start).distinctUntilChanged().share();
+        this.flux = Flux.create(this::start).distinctUntilChanged().replay(1).refCount();
     }
 
     @Override

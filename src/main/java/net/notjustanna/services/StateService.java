@@ -1,7 +1,10 @@
 package net.notjustanna.services;
 
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.runtime.event.ApplicationShutdownEvent;
+import io.micronaut.runtime.event.annotation.EventListener;
 import jakarta.inject.Singleton;
+import net.dv8tion.jda.api.JDA;
 import net.notjustanna.state.ApplicationState;
 import net.notjustanna.state.InitialApplication;
 import reactor.core.publisher.Flux;
@@ -42,5 +45,17 @@ public class StateService {
 
     public ApplicationState current() {
         return currentState;
+    }
+
+
+    @EventListener
+    public void onShutdown(ApplicationShutdownEvent event) {
+        if (currentState != null) {
+            JDA jda = currentState.getJDA();
+
+            if (jda != null) {
+                jda.shutdown();
+            }
+        }
     }
 }

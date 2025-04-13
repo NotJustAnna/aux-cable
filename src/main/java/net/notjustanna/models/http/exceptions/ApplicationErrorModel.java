@@ -7,5 +7,5 @@ import io.micronaut.serde.annotation.Serdeable;
 
 @Serdeable
 @ReflectiveAccess
-public record ApplicationErrorModel(@NonNull String type) {
+public record ApplicationErrorModel(@NonNull String errorType) {
 }

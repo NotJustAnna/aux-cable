@@ -12,7 +12,7 @@ public class ApplicationStateStream implements GatewayStream {
     private final Flux<StateModel> flux;
 
     public ApplicationStateStream(StateService stateService) {
-        this.flux = stateService.getFlux().map(StateModel::of);
+        this.flux = stateService.getFlux().map(StateModel::of).replay(1).refCount();
     }
 
     @Override

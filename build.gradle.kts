@@ -7,7 +7,7 @@ plugins {
 
 allprojects {
     group = "net.notjustanna"
-    version = "3.0"
+    version = "3.1"
 
     repositories {
         mavenCentral()
@@ -27,9 +27,9 @@ dependencies {
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     runtimeOnly("ch.qos.logback:logback-classic")
 
-    implementation("net.notjustanna.webview:webview_java:1.2.0+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-all-natives:1.2.0+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.2.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java:1.3.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-all-natives:1.3.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.3.0+wv0.12.0-nightly.1")
 
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")

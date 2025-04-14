@@ -27,9 +27,9 @@ dependencies {
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     runtimeOnly("ch.qos.logback:logback-classic")
 
-    implementation("net.notjustanna.webview:webview_java:1.3.1+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-all-natives:1.3.1+wv0.12.0-nightly.1")
-    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.3.1+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java:1.5.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-all-natives:1.5.0+wv0.12.0-nightly.1")
+    implementation("net.notjustanna.webview:webview_java-interop-jackson:1.5.0+wv0.12.0-nightly.1")
 
     implementation("net.dv8tion:JDA:5.1.1")
     implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")
@@ -93,7 +93,11 @@ tasks.shadowJar {
 
 val mainClass = "net.notjustanna.Application"
 
-val veryOptimizedJvmOptions = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1"
+val baseJvmOptions = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1"
+
+val osSpecificJvmOptions = mapOf(
+    "darwin" to "-XstartOnFirstThread $baseJvmOptions"
+)
 
 val jlinkOptions = "--verbose --strip-native-commands --strip-debug --no-header-files --no-man-pages --compress=zip-9"
 
@@ -128,6 +132,9 @@ val osSpecific = let {
 
 project(":packaging").subprojects {
     apply(plugin = "base")
+
+    val appJvmOptions = osSpecificJvmOptions.getOrDefault(project.name, baseJvmOptions)
+
     if (project.name.startsWith("win-")) {
         apply(plugin = "edu.sc.seis.launch4j")
     }
@@ -167,7 +174,7 @@ project(":packaging").subprojects {
             jreMinVersion = "21"
             priority = "high"
             productName = "AuxCable"
-            jvmOptions.addAll(veryOptimizedJvmOptions.split(" "))
+            jvmOptions.addAll(appJvmOptions.split(" "))
             version = project.version.toString()
             description = "An open-source, cross-platform, and lightweight Aux Cable for your Discord servers."
         }
@@ -209,7 +216,7 @@ project(":packaging").subprojects {
                 "--main-jar", optimizedJar.archiveFile.get().asFile.name,
                 "--main-class", mainClass,
                 "--jlink-options", jlinkOptions,
-                "--java-options", veryOptimizedJvmOptions,
+                "--java-options", appJvmOptions,
                 "--add-modules", requiredModules.joinToString(",")
             )
             outputs.dir(outputDir)

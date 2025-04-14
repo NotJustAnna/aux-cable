@@ -5,6 +5,7 @@ import io.micronaut.runtime.event.ApplicationStartupEvent;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.runtime.server.EmbeddedServer;
 import jakarta.inject.Singleton;
+import net.notjustanna.utils.MainThreadExecutor;
 import net.notjustanna.webview.WebviewStandalone;
 import net.notjustanna.webview.interop.JacksonWebviewInterop;
 import org.slf4j.Logger;
@@ -16,16 +17,13 @@ import java.net.URI;
 public class WebviewService {
     private static final Logger log = LoggerFactory.getLogger(WebviewService.class);
 
-    private final Thread thread;
     private final EmbeddedServer server;
+    private final MainThreadExecutor executor;
     private Runnable webviewShutdown;
 
-    public WebviewService(EmbeddedServer server) {
+    public WebviewService(EmbeddedServer server, MainThreadExecutor executor) {
         this.server = server;
-        this.thread = Thread.ofPlatform()
-            .name("Webview Thread")
-            .daemon(true)
-            .unstarted(this::startWebview);
+        this.executor = executor;
     }
 
     public void openUrl(String url) {
@@ -56,16 +54,19 @@ public class WebviewService {
                 .setMinSize(400, 300)
                 .setTitle("Aux Cable")
                 .navigate(url)
-                .setDarkMode(true)
-                .dispatch(webview::bringToFront);
+                .setDarkMode(true);
 
             new JacksonWebviewInterop(webview.getWebview())
                 .bindMethod("Webview__openUrl", this, "openUrl")
                 .bindMethod("Webview__shutdown", this, "callShutdown");
 
-            this.webviewShutdown = () -> webview.dispatch(webview::close);
+            this.webviewShutdown = () -> {
+                webview.close();
+                executor.shutdown();
+            };
             webview.run();
             webview.close();
+            executor.shutdown();
             if (this.webviewShutdown != null) {
                 this.webviewShutdown = null;
                 flag_webviewFault = false;
@@ -88,10 +89,7 @@ public class WebviewService {
 
     @EventListener
     public void onStart(ApplicationStartupEvent event) {
-        if (thread.isAlive()) {
-            return;
-        }
-        thread.start();
+        executor.execute(this::startWebview);
     }
 
     @EventListener

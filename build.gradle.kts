@@ -7,7 +7,7 @@ plugins {
 
 allprojects {
     group = "net.notjustanna"
-    version = "3.1.1"
+    version = "3.2"
 
     repositories {
         mavenCentral()
@@ -48,7 +48,9 @@ dependencies {
 
 application {
     mainClass = "net.notjustanna.Application"
+    applicationDefaultJvmArgs = providers.gradleProperty("aux-cable.jvmOptions").get().split(" ")
 }
+
 java {
     sourceCompatibility = JavaVersion.toVersion("21")
     targetCompatibility = JavaVersion.toVersion("21")
@@ -77,29 +79,13 @@ micronaut {
     }
 }
 
-tasks.shadowJar {
-    mergeServiceFiles()
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    exclude(
-        "META-INF/maven/**", "META-INF/license/**", "META-INF/versions/9/**", "META-INF/versions/10/**",
-        "META-INF/versions/11/**", "META-INF/versions/12/**", "META-INF/versions/13/**", "META-INF/versions/14/**",
-        "META-INF/versions/15/**", "META-INF/versions/16/**", "META-INF/versions/17/**", "META-INF/versions/18/**",
-        "META-INF/versions/19/**", "META-INF/versions/20/**", "META-INF/micrometer-*.properties",
-        "META-INF/LGPL2.1", "META-INF/AL2.0", "META-INF/*-LICENSE", "META-INF/LICENSE", "META-INF/LICENSE.txt",
-        "META-INF/LICENSE.md", "META-INF/*-NOTICE", "META-INF/NOTICE", "META-INF/NOTICE.md", "META-INF/NOTICE.txt",
-        "META-INF/COPYRIGHT", "META-INF/com.android.tools/**", "META-INF/proguard/**", "META-INF/native-image/**"
-    )
+val shadowJar = tasks.shadowJar.also { task ->
+    task {
+        mergeServiceFiles()
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        exclude(File(projectDir, "shadowJar.exclude").readLines())
+    }
 }
-
-val mainClass = "net.notjustanna.Application"
-
-val baseJvmOptions = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1"
-
-val osSpecificJvmOptions = mapOf(
-    "darwin" to "-XstartOnFirstThread $baseJvmOptions"
-)
-
-val jlinkOptions = "--verbose --strip-native-commands --strip-debug --no-header-files --no-man-pages --compress=zip-9"
 
 val nativeFolders = mapOf(
     "natives" to listOf("darwin", "linux-aarch64", "linux-arm", "linux-musl-aarch64", "linux-musl-x86-64", "linux-x86",
@@ -117,8 +103,6 @@ val allowedNatives = mapOf(
     "linux-x64" to listOf("linux-x86-64", "linux-musl-x86-64")
 )
 
-val requiredModules = listOf("java.net.http","java.desktop","java.logging","java.naming","jdk.unsupported","java.sql","jdk.crypto.ec","jdk.zipfs")
-
 val osSpecific = let {
     val osName = System.getProperty("os.name").lowercase()
 
@@ -130,26 +114,32 @@ val osSpecific = let {
     }
 }
 
+fun Zip.configureZipTask(project: Project, extension: String) {
+    archiveBaseName = rootProject.name
+    archiveVersion = project.version.toString()
+    archiveClassifier = project.name
+    archiveExtension = extension
+    destinationDirectory = project.layout.buildDirectory.dir("libs")
+}
+
 project(":packaging").subprojects {
     apply(plugin = "base")
-
-    val appJvmOptions = osSpecificJvmOptions.getOrDefault(project.name, baseJvmOptions)
-
     if (project.name.startsWith("win-")) {
         apply(plugin = "edu.sc.seis.launch4j")
     }
 
+    val appJvmOptions = providers.gradleProperty("aux-cable.jvmOptions").get().let { def ->
+        providers.gradleProperty("aux-cable.packaging.editions.${project.name}.jvmOptions")
+            .map { "$it $def" }.getOrElse(def)
+    }
+
     val optimizedJar: Zip by tasks.creating(Zip::class) {
-        dependsOn(rootProject.tasks.shadowJar)
-        archiveBaseName = rootProject.name
-        archiveVersion = project.version.toString()
-        archiveClassifier = project.name
-        archiveExtension = "jar"
-        destinationDirectory = project.layout.buildDirectory.dir("libs")
+        dependsOn(shadowJar)
+        configureZipTask(project, "jar")
 
         val allowed = allowedNatives.getValue(project.name)
 
-        from(zipTree(rootProject.tasks.shadowJar.get().outputs.files.singleFile))
+        from(zipTree(shadowJar.get().outputs.files.singleFile))
         val nativesFromOtherArchs = nativeFolders
             .flatMap { (k,v) -> v.map { k to it } }
             .filterNot { (_,v) -> allowed.contains(v) }
@@ -167,79 +157,66 @@ project(":packaging").subprojects {
         launch4j {
             outfile = "${rootProject.name}-${project.version}-${project.name}.exe"
             outputDir = "distributions"
-            mainClassName = mainClass
+            mainClassName = rootProject.application.mainClass
             copyConfigurable = listOf<Any>()
             setJarTask(optimizedJar)
             stayAlive = true
             jreMinVersion = "21"
             priority = "high"
-            productName = "AuxCable"
+            productName = providers.gradleProperty("aux-cable.packaging.name").get()
             jvmOptions.addAll(appJvmOptions.split(" "))
             version = project.version.toString()
-            description = "An open-source, cross-platform, and lightweight Aux Cable for your Discord servers."
+            description = providers.gradleProperty("aux-cable.packaging.description").get()
+            icon = File(rootProject.projectDir, "jpackage-res/AuxCable.ico").absolutePath
         }
 
-        tasks.createExe {
-            dependsOn(optimizedJar)
-        }
-
-        tasks.assemble {
-            dependsOn(tasks.createExe)
+        tasks {
+            createExe { dependsOn(optimizedJar) }
+            assemble { dependsOn(createExe) }
         }
     }
 
     if (project.name in osSpecific) {
-        val jpackageDir = project.layout.buildDirectory.dir("jpackage")
+        val jpackageDir = project.layout.buildDirectory.dir("jpackage").get()
+        val jpackageOut = jpackageDir.dir("out")
 
-        val prepareJpackage: Copy by tasks.creating(Copy::class) {
-            dependsOn(optimizedJar)
-            from(optimizedJar)
-            into(jpackageDir.get().dir("lib"))
-        }
+        tasks {
+            val prepareJpackage: Copy by creating(Copy::class) {
+                dependsOn(optimizedJar)
+                from(optimizedJar)
+                into(jpackageDir.dir("lib"))
+            }
 
-        val cleanJpackage: Delete by tasks.creating(Delete::class) {
-            delete(jpackageDir.get().dir("out"))
-        }
+            val cleanJpackage: Delete by creating(Delete::class) {
+                delete(jpackageOut)
+            }
 
-        val jpackage: Exec by tasks.creating(Exec::class) {
-            dependsOn(prepareJpackage, cleanJpackage)
-            val outputDir = jpackageDir.get().dir("out")
-            val name = "AuxCable"
-            extra.set("name", name)
-            val resourceDir = rootProject.layout.projectDirectory.dir("jpackage-res")
+            val jpackage: Exec by creating(Exec::class) {
+                dependsOn(prepareJpackage, cleanJpackage)
 
-            commandLine(
-                "jpackage", "--verbose", "--type", "app-image", "--name", name,
-                "--input", prepareJpackage.destinationDir.absolutePath,
-                "--resource-dir", resourceDir.asFile.absolutePath,
-                "--dest", outputDir.asFile.absolutePath,
-                "--main-jar", optimizedJar.archiveFile.get().asFile.name,
-                "--main-class", mainClass,
-                "--jlink-options", jlinkOptions,
-                "--java-options", appJvmOptions,
-                "--add-modules", requiredModules.joinToString(",")
-            )
-            outputs.dir(outputDir)
-        }
+                commandLine(
+                    "jpackage", "--verbose", "--type", "app-image", "--name", providers.gradleProperty("aux-cable.packaging.name").get(),
+                    "--description", providers.gradleProperty("aux-cable.packaging.description").get(),
+                    "--app-version", project.version.toString(),
+                    "--input", prepareJpackage.destinationDir.absolutePath,
+                    "--resource-dir", File(rootProject.projectDir, "jpackage-res").absolutePath,
+                    "--dest", jpackageOut.asFile.absolutePath,
+                    "--main-jar", optimizedJar.archiveFile.get().asFile.name,
+                    "--main-class", rootProject.application.mainClass,
+                    "--jlink-options", providers.gradleProperty("aux-cable.jlinkOptions").get(),
+                    "--java-options", appJvmOptions,
+                    "--add-modules", providers.gradleProperty("aux-cable.requiredModules").get()
+                )
+                outputs.dir(jpackageOut)
+            }
 
-        // val postJpackage: Delete by tasks.creating(Delete::class) {
-        //     dependsOn(jpackage)
-        //     val name = jpackage.extra.get("name").toString()
-        //     delete(jpackageDir.get().dir("out/$name/runtime/legal"))
-        // }
+            val distJpackage: Zip by creating(Zip::class) {
+                dependsOn(jpackage)
+                configureZipTask(project, "zip")
+                from(jpackageOut)
+            }
 
-        val distJpackage: Zip by tasks.creating(Zip::class) {
-            dependsOn(jpackage)
-            archiveBaseName = rootProject.name
-            archiveVersion = project.version.toString()
-            archiveClassifier = project.name
-            archiveExtension = "zip"
-            destinationDirectory = project.layout.buildDirectory.dir("distributions")
-            from(jpackageDir.get().dir("out"))
-        }
-
-        tasks.assemble {
-            dependsOn(distJpackage)
+            assemble { dependsOn(distJpackage) }
         }
     }
 }

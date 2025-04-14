@@ -114,12 +114,12 @@ val osSpecific = let {
     }
 }
 
-fun Zip.configureZipTask(project: Project, extension: String) {
+fun Zip.configureZipTask(project: Project, extension: String, destDir: String) {
     archiveBaseName = rootProject.name
     archiveVersion = project.version.toString()
     archiveClassifier = project.name
     archiveExtension = extension
-    destinationDirectory = project.layout.buildDirectory.dir("libs")
+    destinationDirectory = project.layout.buildDirectory.dir(destDir)
 }
 
 project(":packaging").subprojects {
@@ -135,7 +135,7 @@ project(":packaging").subprojects {
 
     val optimizedJar: Zip by tasks.creating(Zip::class) {
         dependsOn(shadowJar)
-        configureZipTask(project, "jar")
+        configureZipTask(project, "jar", "libs")
 
         val allowed = allowedNatives.getValue(project.name)
 
@@ -212,7 +212,7 @@ project(":packaging").subprojects {
 
             val distJpackage: Zip by creating(Zip::class) {
                 dependsOn(jpackage)
-                configureZipTask(project, "zip")
+                configureZipTask(project, "zip", "distributions")
                 from(jpackageOut)
             }
 

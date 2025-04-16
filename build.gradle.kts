@@ -7,7 +7,7 @@ plugins {
 
 allprojects {
     group = "net.notjustanna"
-    version = "3.2"
+    version = "3.3"
 
     repositories {
         mavenCentral()
@@ -157,7 +157,7 @@ project(":packaging").subprojects {
         launch4j {
             outfile = "${rootProject.name}-${project.version}-${project.name}.exe"
             outputDir = "distributions"
-            mainClassName = rootProject.application.mainClass
+            mainClassName = rootProject.application.mainClass.get()
             copyConfigurable = listOf<Any>()
             setJarTask(optimizedJar)
             stayAlive = true
@@ -179,16 +179,17 @@ project(":packaging").subprojects {
     if (project.name in osSpecific) {
         val jpackageDir = project.layout.buildDirectory.dir("jpackage").get()
         val jpackageOut = jpackageDir.dir("out")
+        val jpackageLib = jpackageDir.dir("lib")
 
         tasks {
             val prepareJpackage: Copy by creating(Copy::class) {
                 dependsOn(optimizedJar)
                 from(optimizedJar)
-                into(jpackageDir.dir("lib"))
+                into(jpackageLib)
             }
 
             val cleanJpackage: Delete by creating(Delete::class) {
-                delete(jpackageOut)
+                delete(jpackageOut, jpackageLib)
             }
 
             val jpackage: Exec by creating(Exec::class) {
@@ -202,7 +203,7 @@ project(":packaging").subprojects {
                     "--resource-dir", File(rootProject.projectDir, "jpackage-res").absolutePath,
                     "--dest", jpackageOut.asFile.absolutePath,
                     "--main-jar", optimizedJar.archiveFile.get().asFile.name,
-                    "--main-class", rootProject.application.mainClass,
+                    "--main-class", rootProject.application.mainClass.get(),
                     "--jlink-options", providers.gradleProperty("aux-cable.jlinkOptions").get(),
                     "--java-options", appJvmOptions,
                     "--add-modules", providers.gradleProperty("aux-cable.requiredModules").get()

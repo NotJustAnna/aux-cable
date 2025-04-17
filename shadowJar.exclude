@@ -1,17 +1,5 @@
 META-INF/maven/**
 META-INF/license/**
-META-INF/versions/9/**
-META-INF/versions/10/**
-META-INF/versions/11/**
-META-INF/versions/12/**
-META-INF/versions/13/**
-META-INF/versions/14/**
-META-INF/versions/15/**
-META-INF/versions/16/**
-META-INF/versions/17/**
-META-INF/versions/18/**
-META-INF/versions/19/**
-META-INF/versions/20/**
 META-INF/micrometer-*.properties
 META-INF/LGPL2.1
 META-INF/AL2.0

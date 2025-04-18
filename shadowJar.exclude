@@ -15,3 +15,4 @@ META-INF/COPYRIGHT
 META-INF/com.android.tools/**
 META-INF/proguard/**
 META-INF/native-image/**
+**/module-info.class

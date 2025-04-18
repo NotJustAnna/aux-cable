@@ -1,29 +1,33 @@
 package net.notjustanna.services;
 
+import io.micronaut.context.annotation.Requires;
 import io.micronaut.runtime.event.ApplicationShutdownEvent;
 import io.micronaut.runtime.event.ApplicationStartupEvent;
 import io.micronaut.runtime.event.annotation.EventListener;
 import io.micronaut.runtime.server.EmbeddedServer;
 import jakarta.inject.Singleton;
-import net.notjustanna.utils.MainThreadExecutor;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.notjustanna.state.ApplicationState;
 import net.notjustanna.webview.WebviewStandalone;
 import net.notjustanna.webview.interop.JacksonWebviewInterop;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.Disposable;
+
 import java.awt.Desktop;
 import java.net.URI;
 
 @Singleton
+@Requires(beans = {WebviewStandalone.class})
 public class WebviewService {
-    private static final Logger log = LoggerFactory.getLogger(WebviewService.class);
-
     private final EmbeddedServer server;
-    private final MainThreadExecutor executor;
-    private Runnable webviewShutdown;
+    private final StateService stateService;
+    private final WebviewStandalone webview;
+    private Disposable disposable;
 
-    public WebviewService(EmbeddedServer server, MainThreadExecutor executor) {
+    public WebviewService(EmbeddedServer server, StateService stateService, WebviewStandalone webview) {
         this.server = server;
-        this.executor = executor;
+        this.stateService = stateService;
+        this.webview = webview;
     }
 
     public void openUrl(String url) {
@@ -35,67 +39,48 @@ public class WebviewService {
     }
 
     public void callShutdown() {
-        Runnable webviewShutdown = this.webviewShutdown;
-        this.webviewShutdown = null;
-        if (webviewShutdown != null) {
-            webviewShutdown.run();
-        }
-        server.stop();
-    }
-
-    private void startWebview() {
-        String url = "http://localhost:" + server.getPort();
-        boolean flag_webviewFault = true;
-
-        try {
-            WebviewStandalone webview = new WebviewStandalone(true);
-
-            webview.setSize(800, 600)
-                .setMinSize(400, 300)
-                .setTitle("Aux Cable")
-                .navigate(url)
-                .setDarkMode(true);
-
-            new JacksonWebviewInterop(webview.getWebview())
-                .bindMethod("Webview__openUrl", this, "openUrl")
-                .bindMethod("Webview__shutdown", this, "callShutdown");
-
-            this.webviewShutdown = () -> {
-                webview.close();
-                executor.shutdown();
-            };
-            webview.run();
-            webview.close();
-            executor.shutdown();
-            if (this.webviewShutdown != null) {
-                this.webviewShutdown = null;
-                flag_webviewFault = false;
-                callShutdown();
-            }
-        } catch (Exception e) {
-            if (flag_webviewFault) {
-                log.warn("Could not start webview, falling back to browser.", e);
-                // Somehow the webview managed to fail to load. Great.
-                try {
-                    Desktop.getDesktop().browse(URI.create(url));
-                } catch (Exception ex) {
-                    log.error("Could not load browser.", ex);
-                }
-            } else {
-                throw new RuntimeException(e);
-            }
-        }
+        webview.close();
     }
 
     @EventListener
     public void onStart(ApplicationStartupEvent event) {
-        executor.execute(this::startWebview);
+        webview.setTitle("Aux Cable");
+
+        new JacksonWebviewInterop(webview.getWebview())
+            .bindMethod("Webview__openUrl", this, "openUrl")
+            .bindMethod("Webview__shutdown", this, "callShutdown")
+            .bindMethod("Webview__applicationUrl", this, "applicationUrl");
+
+        disposable = this.stateService.getFlux().subscribe(this::updateTitle);
+
+        webview.navigate(applicationUrl());
+    }
+
+    private void updateTitle(ApplicationState state) {
+        switch (state.getType()) {
+            case IDLE -> webview.setTitle("Aux Cable");
+            case LOGGED_IN -> {
+                String name = state.getJDA().getSelfUser().getEffectiveName();
+                webview.setTitle("Aux Cable | Logged in: " + name);
+            }
+            case CONNECTED -> {
+                VoiceChannel channel = state.getChannel();
+                String name = channel.getName() + " (" + channel.getGuild().getName() + ")";
+                webview.setTitle("Aux Cable | Connected: " + name);
+            }
+        }
+    }
+
+    @NotNull
+    public String applicationUrl() {
+        return "http://localhost:" + server.getPort();
     }
 
     @EventListener
     public void onShutdown(ApplicationShutdownEvent event) {
-        if (this.webviewShutdown != null) {
-            this.webviewShutdown.run();
+        if (disposable != null) {
+            disposable.dispose();
         }
+        callShutdown();
     }
 }

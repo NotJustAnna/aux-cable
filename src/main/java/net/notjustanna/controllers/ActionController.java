@@ -56,6 +56,5 @@ public class ActionController {
     @Post("/shutdown")
     public void shutdown() {
         CompletableFuture.runAsync(application::stop);
-
     }
 }

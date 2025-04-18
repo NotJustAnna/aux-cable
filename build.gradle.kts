@@ -1,7 +1,6 @@
 plugins {
     id("io.micronaut.application") version "4.5.0"
     id("com.gradleup.shadow") version "8.3.6"
-    id("io.micronaut.aot") version "4.5.0"
     id("edu.sc.seis.launch4j") version "3.0.6"
 }
 
@@ -25,7 +24,9 @@ dependencies {
     implementation("io.micronaut:micronaut-websocket")
     implementation("io.micronaut.reactor:micronaut-reactor")
     implementation("io.micronaut.serde:micronaut-serde-jackson")
-    runtimeOnly("ch.qos.logback:logback-classic")
+    implementation("io.jstach.rainbowgum:rainbowgum-core:0.8.1")
+    implementation("io.jstach.rainbowgum:rainbowgum-pattern:0.8.1")
+    implementation("io.jstach.rainbowgum:rainbowgum-slf4j:0.8.1")
 
     implementation("net.notjustanna.webview:webview_java:1.5.0+wv0.12.0-nightly.1")
     implementation("net.notjustanna.webview:webview_java-all-natives:1.5.0+wv0.12.0-nightly.1")
@@ -45,6 +46,11 @@ dependencies {
     runtimeOnly(project(":frontend"))
 }
 
+configurations{
+    runtimeClasspath {
+        exclude("ch.qos.logback", "logback-classic")
+    }
+}
 
 application {
     mainClass = "net.notjustanna.Application"
@@ -64,18 +70,6 @@ micronaut {
     processing {
         incremental(true)
         annotations("net.notjustanna.*")
-    }
-    aot {
-        // Please review carefully the optimizations enabled below
-        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
-        optimizeServiceLoading = false
-        convertYamlToJava = false
-        precomputeOperations = true
-        cacheEnvironment = true
-        optimizeClassLoading = true
-        deduceEnvironment = true
-        optimizeNetty = true
-        replaceLogbackXml = true
     }
 }
 

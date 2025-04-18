@@ -85,7 +85,15 @@ public class ConnectedApplication extends ApplicationState {
     public CompletableFuture<ApplicationState> disconnect() {
         flow.push("action.disconnect.start");
         flow.push("action.disconnect.close");
-        this.getChannel().getGuild().getAudioManager().closeAudioConnection();
+        AudioManager audioManager = this.getChannel().getGuild().getAudioManager();
+        if (audioManager.getSendingHandler() instanceof AudioSystemSendHandler handler) {
+            try {
+                handler.close();
+            } catch (IOException ignored) {
+            }
+        }
+        audioManager.setSendingHandler(null);
+        audioManager.closeAudioConnection();
         flow.push("action.disconnect.success");
         return CompletableFuture.completedFuture(new LoggedInApplication(service, jda));
     }
